@@ -1,0 +1,19 @@
+{
+  "name": "client",
+  "authors": [
+    "bonestormiii <aaron.t.lockhart@gmail.com>"
+  ],
+  "description": "client for curator",
+  "main": "index.html",
+  "moduleType": [],
+  "license": "MIT",
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

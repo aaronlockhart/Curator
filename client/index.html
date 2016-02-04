@@ -1,0 +1,104 @@
+<html>
+
+<head>
+    <title>Curator</title>
+    <link rel="stylesheet" type="text/css" href="/style/style.css">
+</head>
+
+<body>
+    <img src="" width="100%" id="image">
+    <form method="get" id="buttonForm">
+        <input type="hidden" name="filename" id="filename">
+        <input type="submit" name="button" value="prev">
+        <input type="submit" name="button" value="keep">
+        <input type="submit" name="button" value="next">
+    </form>
+    <script src="/bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="/bower_components/hammerjs/hammer.min.js"></script>
+    <script src="/bower_components/jquery-hammerjs/jquery.hammer.js"></script>
+    <script>
+        $(document).ready(function() {
+                var options = {
+                    recognizers: [
+                        [Hammer.Swipe, { direction: Hammer.DIRECTION_ALL }],
+                    ]
+                };
+                
+                $("#image").hammer(options).bind("swipeleft", mySwipeLeftHandler);
+                $("#image").hammer(options).bind("swiperight", mySwipeRightHandler);
+                $("#image").hammer(options).bind("swipeup", mySwipeUpHandler);
+                
+                getCurrentFileInfo(setCurrentFileInfo);
+                
+                $("#buttonForm").submit(function() {
+                    if (currentFileInfo.filename) {
+                        $("#filename").val(currentFileInfo.filename);
+                    }
+                });
+            });
+            
+            var fileMetaData = function(init) {
+                init = init || {};
+                var that = {};
+                
+                that.filename = init.filename || '';
+                that.path = init.path || '';
+                that.keep = init.keep || false;
+                
+                return that;
+            }
+            
+            var currentFileInfo = fileMetaData();
+            
+            function getCurrentFileInfo(currentInfoCallback) {
+                $.getJSON('/currentFileInfo', function(data) {
+                   console.log(data);
+                   currentInfoCallback(fileMetaData(data));
+                });
+            }
+            
+            function setCurrentFileInfo(currentInfo, fetch) {
+                fetch = fetch || true;
+                currentFileInfo = currentInfo;
+                
+                if(currentFileInfo.keep) {
+                    $("#image").attr("class", "highlighted");
+                }
+                else {
+                    $("#image").attr("class", "");
+                }
+                
+                if (fetch) {
+                    $("#image").attr("src", "/getFile?filename=" + currentFileInfo.filename);
+                }
+            }
+            
+            function mySwipeLeftHandler(event) {
+                console.log(event);
+                $.getJSON('?button=next&ajax=true', function(data) {
+                   console.log(data);
+                   setCurrentFileInfo(fileMetaData(data));              
+                });
+            }
+            
+            function mySwipeRightHandler(event) {
+                console.log(event);
+                $.getJSON('?button=prev&ajax=true', function(data) {
+                   console.log(data);
+                   setCurrentFileInfo(fileMetaData(data)); 
+                });
+            }
+            
+            function mySwipeUpHandler(event) {
+                console.log(event);
+                if (currentFileInfo.filename) {
+                   $.getJSON('?button=keep&ajax=true&filename=' + currentFileInfo.filename, function(data) {
+                        console.log(data);
+                        setCurrentFileInfo(fileMetaData(data), false);
+                    });
+                }
+            }
+    </script>
+</body>
+
+</html>
