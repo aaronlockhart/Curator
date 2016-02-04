@@ -1,8 +1,10 @@
 var http = require('http');
 var fs = require('fs');
 var url = require('url');
+var express = require('express');
 
-var hostname = 'localhost';
+var app = express();
+var hostname = '192.168.0.102';
 var port = 8080;
 var validFileTypes = /.gif|.jpg|.jpeg/i;
 
@@ -21,7 +23,7 @@ var fileMetaData = function (init) {
     that.filename = init.filename || '';
     that.path = init.path || '';
     that.keep = init.keep || false;
-
+    that.tags = init.tags || [];
     return that;
 }
 
@@ -33,7 +35,7 @@ var fileInfo = {
     fileMetaData: {},
 }
 
-fileInfo.dir = 'D:\\OneDrive\\Photos\\2011\\2012-01-04';
+fileInfo.dir = 'C:\\Users\\lockhart\\OneDrive\\Photos\\2011\\2012-01-04';
 
 var rootPath = '../client';
 var defaultDoc = '/index.html';
@@ -154,12 +156,12 @@ function serveFile(res, path) {
 // obj : the javascript object to return in the response as a JSON string
 // callback : an optional string containing the name of a callback function to wrap around the JSON object string
 function serveJavascriptObject(res, obj, callback) {
-     if(callback) {
-        res.writeHead(200, { 'Content-type': 'application/javascript'});
+    if (callback) {
+        res.writeHead(200, { 'Content-type': 'application/javascript' });
         res.end(callback + '(' + JSON.stringify(obj) + ');');
     }
     else {
-        res.writeHead(200, { 'Content-Type': 'application/json'});
+        res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(obj));
     }
 }
@@ -203,73 +205,74 @@ function getNextValidFile(funcArr, fileInfo, currFunc) {
 
 // createServer
 // creates the server
-function createServer(hostname, port) {
-    http.createServer(function (req, res) {
-        var reqURL = url.parse(req.url, true);
-        console.log("Received query: " + req.url + '\n');
-        console.log(getQueryValueString(reqURL.query));
+app.use('/', express.static(rootPath));
 
-        // Button actions
-        if (reqURL.query.button === 'prev') {
-            getNextValidFile([getPrevFile, getNextFile], fileInfo);
-            if (reqURL.query.ajax === 'true') {
-                serveJavascriptObject(res, fileInfo.fileMetaData[fileInfo.currFile]);
-                return;
-            }
-        }
-        else if (reqURL.query.button === 'next') {
-            getNextValidFile([getNextFile, getPrevFile], fileInfo);
-            if (reqURL.query.ajax === 'true') {
-                serveJavascriptObject(res, fileInfo.fileMetaData[fileInfo.currFile]);
-                return;
-            }
-        }
-        else if (reqURL.query.button === 'keep') {
-            var filename = reqURL.query.filename;
-            fileInfo.fileMetaData[filename].keep = true;
-            if (reqURL.query.ajax === 'true') {
-                serveJavascriptObject(res, fileInfo.fileMetaData[filename]);
-                return;
-            }
-        }
-        else if (reqURL.query.button === 'unkeep') {
-            var filename = reqURL.query.filename;
-            fileInfo.fileMetaData[filename].keep = false;
-            if (reqURL.query.ajax === 'true') {
-                serveJavascriptObject(res, fileInfo.fileMetaData[filename]);
-                return;
-            }
-        }
+app.get('/file', function (req, res) {
+    var reqURL = url.parse(req.url, true);
+    console.log("Received query: " + req.url + '\n');
+    console.log(getQueryValueString(reqURL.query));
 
-        if (reqURL.pathname === '/getFile') {
-            var filename = reqURL.query.filename || fileInfo.currFile;
+    var filename = reqURL.query.filename || fileInfo.currFile;
             
-            // Serve the current image
-            if (!isValidFile(fileInfo, filename)) {
-                res.end();
-            }
-            else {
-                serveFile(res, fileInfo.dir + '\\' + filename);
-            }
-            return;
-        }
-        else if (reqURL.pathname === '/currentFileInfo') {
+    // Serve the current image
+    if (!isValidFile(fileInfo, filename)) {
+        res.end();
+    }
+    else {
+        serveFile(res, fileInfo.dir + '\\' + filename);
+    }
+});
+
+app.get('/currentFileInfo', function (req, res) {
+    var reqURL = url.parse(req.url, true);
+    console.log("Received query: " + req.url + '\n');
+    console.log(getQueryValueString(reqURL.query));
+
+    serveJavascriptObject(res, fileInfo.fileMetaData[fileInfo.currFile]);
+});
+
+app.get('/action', function (req, res) {
+    var reqURL = url.parse(req.url, true);
+    console.log("Received query: " + req.url + '\n');
+    console.log(getQueryValueString(reqURL.query));
+
+    // Button actions
+    if (reqURL.query.button === 'prev') {
+        getNextValidFile([getPrevFile, getNextFile], fileInfo);
+        if (reqURL.query.ajax === 'true') {
             serveJavascriptObject(res, fileInfo.fileMetaData[fileInfo.currFile]);
             return;
         }
-        else {
-            var doc = reqURL.pathname;
-            if (reqURL.pathname == '/') {
-                doc = defaultDoc;
-            }
-            // serve the requested document from the root path
-            serveFile(res, rootPath + doc);
+    }
+    else if (reqURL.query.button === 'next') {
+        getNextValidFile([getNextFile, getPrevFile], fileInfo);
+        if (reqURL.query.ajax === 'true') {
+            serveJavascriptObject(res, fileInfo.fileMetaData[fileInfo.currFile]);
+            return;
         }
-    }).listen(port, hostname, function () {
-        console.log('Server running at ' + hostname + ' on port ' + port);
-    });
-}
+    }
+    else if (reqURL.query.button === 'keep') {
+        var filename = reqURL.query.filename;
+        fileInfo.fileMetaData[filename].keep = true;
+        if (reqURL.query.ajax === 'true') {
+            serveJavascriptObject(res, fileInfo.fileMetaData[filename]);
+            return;
+        }
+    }
+    else if (reqURL.query.button === 'unkeep') {
+        var filename = reqURL.query.filename;
+        fileInfo.fileMetaData[filename].keep = false;
+        if (reqURL.query.ajax === 'true') {
+            serveJavascriptObject(res, fileInfo.fileMetaData[filename]);
+            return;
+        }
+    }
+});
+
 
 // Server startup
 getFiles(fileInfo);
-createServer(hostname, port);
+
+app.listen(8080, function () {
+    console.log('Server running at ' + hostname + ' on port ' + port);
+})
