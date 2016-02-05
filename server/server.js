@@ -17,25 +17,71 @@ var contentTypes = {
     '.css': "text/css",
 }
 
-var fileMetaData = function (init) {
+var createfileMetaData = function (init) {
     init = init || {};
     var that = {};
     that.filename = init.filename || '';
     that.path = init.path || '';
     that.keep = init.keep || false;
     that.tags = init.tags || [];
+    that.index = init.index || -1;
+
     return that;
 }
 
-var fileInfo = {
-    dir: '',
-    currFile: undefined,
-    currFileIndex: -1,
-    dirFiles: [],
-    fileMetaData: {},
+var createfileInfo = function (init) {
+    init = init || {};
+    var that = {};
+
+    that.dir = init.dir || '';
+    that.currFile = init.currFile || undefined;
+    that.currFileIndex = init.currFileIndex || -1;
+    that.dirFiles = init.dirFiles || [];
+    that.fileMetaData = init.fileMetaData || {};
+
+    // getNextFile(fileInfo)
+    //
+    // Gets the next file for the given fileInfo object
+    // returns true if getNextFile can be called again, false otherwise (i.e. is at the end of the file set)
+    that.getNextFile = function () {
+        if (that.currFileIndex < that.dirFiles.length - 1) {
+            that.currFileIndex += 1;
+            that.currFile = that.dirFiles[that.currFileIndex];
+            return true;
+        }
+
+        return false;
+    }
+
+    // getPrevFile(fileInfo)
+    //
+    // Gets the previous file for the given fileInfo object
+    // returns true if getPrevFile can be called again, false otherwise (i.e. is at the beginning of the file set)
+    that.getPrevFile = function () {
+        if (that.currFileIndex > 0) {
+            that.currFileIndex -= 1;
+            that.currFile = that.dirFiles[that.currFileIndex];
+            return true;
+        }
+
+        return false;
+    }
+
+    return that;
 }
 
-fileInfo.dir = 'C:\\Users\\lockhart\\OneDrive\\Photos\\2011\\2012-01-04';
+var createCuratorApp = function (init) {
+    init = init || {};
+    var that = {};
+
+    that.fileInfo = init.fileInfo || createfileInfo();
+
+    return that;
+}
+
+var appInstance = createCuratorApp();
+
+appInstance.fileInfo.dir = 'D:\\OneDrive\\Photos\\2011\\2012-01-04';
 
 var rootPath = '../client';
 var defaultDoc = '/index.html';
@@ -47,48 +93,21 @@ function getFiles(fileInfo) {
     fileInfo.dirFiles = fs.readdirSync(fileInfo.dir);
     
     // build meta data
-    while (getNextFile(fileInfo)) {
-        fileInfo.fileMetaData[fileInfo.currFile] = fileMetaData({
+    while (fileInfo.getNextFile()) {
+        fileInfo.fileMetaData[fileInfo.currFile] = createfileMetaData({
             filename: fileInfo.currFile,
             path: fileInfo.dir,
-            keep: false
+            keep: false,
+            index: fileInfo.currFileIndex,
         })
     }
     
     // return to start
-    while (getPrevFile(fileInfo));
+    while (fileInfo.getPrevFile());
 
     if (!isValidFile(fileInfo)) {
-        getNextValidFile([getNextFile, getPrevFile], fileInfo);
+        getNextValidFile([fileInfo.getNextFile, fileInfo.getPrevFile], fileInfo);
     }
-}
-
-// getPrevFile(fileInfo)
-//
-// Gets the previous file for the given fileInfo object
-// returns true if getPrevFile can be called again, false otherwise (i.e. is at the beginning of the file set)
-function getPrevFile(fileInfo) {
-    if (fileInfo && fileInfo.currFileIndex > 0) {
-        fileInfo.currFileIndex -= 1;
-        fileInfo.currFile = fileInfo.dirFiles[fileInfo.currFileIndex];
-        return true;
-    }
-
-    return false;
-}
-
-// getNextFile(fileInfo)
-//
-// Gets the next file for the given fileInfo object
-// returns true if getNextFile can be called again, false otherwise (i.e. is at the end of the file set)
-function getNextFile(fileInfo) {
-    if (fileInfo && fileInfo.currFileIndex < fileInfo.dirFiles.length - 1) {
-        fileInfo.currFileIndex += 1;
-        fileInfo.currFile = fileInfo.dirFiles[fileInfo.currFileIndex];
-        return true;
-    }
-
-    return false;
 }
 
 // getQueryValueString(query, strNewline)
@@ -212,14 +231,14 @@ app.get('/file', function (req, res) {
     console.log("Received query: " + req.url + '\n');
     console.log(getQueryValueString(reqURL.query));
 
-    var filename = reqURL.query.filename || fileInfo.currFile;
+    var filename = reqURL.query.filename || appInstance.fileInfo.currFile;
             
     // Serve the current image
-    if (!isValidFile(fileInfo, filename)) {
+    if (!isValidFile(appInstance.fileInfo, filename)) {
         res.end();
     }
     else {
-        serveFile(res, fileInfo.dir + '\\' + filename);
+        serveFile(res, appInstance.fileInfo.dir + '\\' + filename);
     }
 });
 
@@ -228,7 +247,7 @@ app.get('/currentFileInfo', function (req, res) {
     console.log("Received query: " + req.url + '\n');
     console.log(getQueryValueString(reqURL.query));
 
-    serveJavascriptObject(res, fileInfo.fileMetaData[fileInfo.currFile]);
+    serveJavascriptObject(res, appInstance.fileInfo.fileMetaData[appInstance.fileInfo.currFile]);
 });
 
 app.get('/action', function (req, res) {
@@ -238,32 +257,32 @@ app.get('/action', function (req, res) {
 
     // Button actions
     if (reqURL.query.button === 'prev') {
-        getNextValidFile([getPrevFile, getNextFile], fileInfo);
+        getNextValidFile([appInstance.fileInfo.getPrevFile, appInstance.fileInfo.getNextFile], appInstance.fileInfo);
         if (reqURL.query.ajax === 'true') {
-            serveJavascriptObject(res, fileInfo.fileMetaData[fileInfo.currFile]);
+            serveJavascriptObject(res, appInstance.fileInfo.fileMetaData[appInstance.fileInfo.currFile]);
             return;
         }
     }
     else if (reqURL.query.button === 'next') {
-        getNextValidFile([getNextFile, getPrevFile], fileInfo);
+        getNextValidFile([appInstance.fileInfo.getNextFile, appInstance.fileInfo.getPrevFile], appInstance.fileInfo);
         if (reqURL.query.ajax === 'true') {
-            serveJavascriptObject(res, fileInfo.fileMetaData[fileInfo.currFile]);
+            serveJavascriptObject(res, appInstance.fileInfo.fileMetaData[appInstance.fileInfo.currFile]);
             return;
         }
     }
     else if (reqURL.query.button === 'keep') {
         var filename = reqURL.query.filename;
-        fileInfo.fileMetaData[filename].keep = true;
+        appInstance.fileInfo.fileMetaData[filename].keep = true;
         if (reqURL.query.ajax === 'true') {
-            serveJavascriptObject(res, fileInfo.fileMetaData[filename]);
+            serveJavascriptObject(res, appInstance.fileInfo.fileMetaData[filename]);
             return;
         }
     }
     else if (reqURL.query.button === 'unkeep') {
         var filename = reqURL.query.filename;
-        fileInfo.fileMetaData[filename].keep = false;
+        appInstance.fileInfo.fileMetaData[filename].keep = false;
         if (reqURL.query.ajax === 'true') {
-            serveJavascriptObject(res, fileInfo.fileMetaData[filename]);
+            serveJavascriptObject(res, appInstance.fileInfo.fileMetaData[filename]);
             return;
         }
     }
@@ -271,7 +290,7 @@ app.get('/action', function (req, res) {
 
 
 // Server startup
-getFiles(fileInfo);
+getFiles(appInstance.fileInfo);
 
 app.listen(8080, function () {
     console.log('Server running at ' + hostname + ' on port ' + port);
