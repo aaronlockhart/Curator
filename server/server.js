@@ -3,10 +3,11 @@ var fs = require('fs');
 var url = require('url');
 var express = require('express');
 
-var app = express();
 var hostname = '192.168.0.102';
 var port = 8080;
-var validFileTypes = /.gif|.jpg|.jpeg/i;
+
+var rootPath = '../client';
+var defaultDoc = '/index.html';
 
 var contentTypes = {
     '.jpg': 'image/jpg',
@@ -19,34 +20,35 @@ var contentTypes = {
 
 var createfileMetaData = function (init) {
     init = init || {};
-    var that = {};
-    that.filename = init.filename || '';
-    that.path = init.path || '';
-    that.keep = init.keep || false;
-    that.tags = init.tags || [];
-    that.index = init.index || -1;
+    var instance = {};
+    instance.filename = init.filename || '';
+    instance.path = init.path || '';
+    instance.keep = init.keep || false;
+    instance.tags = init.tags || [];
+    instance.index = init.index || -1;
 
-    return that;
+    return instance;
 }
 
 var createfileInfo = function (init) {
     init = init || {};
-    var that = {};
+    var instance = {};
 
-    that.dir = init.dir || '';
-    that.currFile = init.currFile || undefined;
-    that.currFileIndex = init.currFileIndex || -1;
-    that.dirFiles = init.dirFiles || [];
-    that.fileMetaData = init.fileMetaData || {};
-
+    instance.dir = init.dir || '';
+    instance.currFile = init.currFile || undefined;
+    instance.currFileIndex = init.currFileIndex || -1;
+    instance.dirFiles = init.dirFiles || [];
+    instance.fileMetaData = init.fileMetaData || {};
+    instance.validFileTypes = init.validFileTypes || /\.*/i;
+    
     // getNextFile(fileInfo)
     //
     // Gets the next file for the given fileInfo object
     // returns true if getNextFile can be called again, false otherwise (i.e. is at the end of the file set)
-    that.getNextFile = function () {
-        if (that.currFileIndex < that.dirFiles.length - 1) {
-            that.currFileIndex += 1;
-            that.currFile = that.dirFiles[that.currFileIndex];
+    instance.getNextFile = function () {
+        if (instance.currFileIndex < instance.dirFiles.length - 1) {
+            instance.currFileIndex += 1;
+            instance.currFile = instance.dirFiles[instance.currFileIndex];
             return true;
         }
 
@@ -57,57 +59,60 @@ var createfileInfo = function (init) {
     //
     // Gets the previous file for the given fileInfo object
     // returns true if getPrevFile can be called again, false otherwise (i.e. is at the beginning of the file set)
-    that.getPrevFile = function () {
-        if (that.currFileIndex > 0) {
-            that.currFileIndex -= 1;
-            that.currFile = that.dirFiles[that.currFileIndex];
+    instance.getPrevFile = function () {
+        if (instance.currFileIndex > 0) {
+            instance.currFileIndex -= 1;
+            instance.currFile = instance.dirFiles[instance.currFileIndex];
             return true;
         }
 
         return false;
     }
+    
+    // getFiles()
+    // 
+    // Retrieves a list of files and sets the next valid file
+    instance.getFiles = function () {
+        instance.dirFiles = fs.readdirSync(instance.dir);
+    
+        // build meta data
+        while (instance.getNextFile()) {
+            instance.fileMetaData[instance.currFile] = createfileMetaData({
+                filename: instance.currFile,
+                path: instance.dir,
+                keep: false,
+                index: instance.currFileIndex,
+            })
+        }
+    
+        // return to start
+        while (instance.getPrevFile());
 
-    return that;
+        if (!instance.isValidFile()) {
+            getNextValidFile([instance.getNextFile, instance.getPrevFile], instance);
+        }
+    }
+
+    // isValidFile(fileInfo)
+    //
+    // Determines if the next file is a valid file type
+    instance.isValidFile = function (filename) {
+        filename = (filename || instance.currFile) + "";
+        console.log("testing " + filename + " is valid");
+        return filename.match(instance.validFileTypes) && instance.fileMetaData[filename];
+    }
+    
+    return instance;
 }
 
 var createCuratorApp = function (init) {
     init = init || {};
-    var that = {};
+    var instance = {};
 
-    that.fileInfo = init.fileInfo || createfileInfo();
+    instance.fileInfo = createfileInfo(init.fileInfo);
+    instance.expressInstance = express();
 
-    return that;
-}
-
-var appInstance = createCuratorApp();
-
-appInstance.fileInfo.dir = 'D:\\OneDrive\\Photos\\2011\\2012-01-04';
-
-var rootPath = '../client';
-var defaultDoc = '/index.html';
-
-// getFiles()
-// 
-// Retrieves a list of files and sets the next valid file
-function getFiles(fileInfo) {
-    fileInfo.dirFiles = fs.readdirSync(fileInfo.dir);
-    
-    // build meta data
-    while (fileInfo.getNextFile()) {
-        fileInfo.fileMetaData[fileInfo.currFile] = createfileMetaData({
-            filename: fileInfo.currFile,
-            path: fileInfo.dir,
-            keep: false,
-            index: fileInfo.currFileIndex,
-        })
-    }
-    
-    // return to start
-    while (fileInfo.getPrevFile());
-
-    if (!isValidFile(fileInfo)) {
-        getNextValidFile([fileInfo.getNextFile, fileInfo.getPrevFile], fileInfo);
-    }
+    return instance;
 }
 
 // getQueryValueString(query, strNewline)
@@ -185,14 +190,6 @@ function serveJavascriptObject(res, obj, callback) {
     }
 }
 
-// isValidFile(fileInfo)
-//
-// Determines if the next file is a valid file type
-function isValidFile(fileInfo, filename) {
-    filename = filename || fileInfo.currFile;
-    return filename.match(validFileTypes) && fileInfo.fileMetaData[filename];
-}
-
 // getNextValidFile(funcArr, fileInfo, currMethod)
 //
 // Uses an array of functions to try and find the next valid file
@@ -213,20 +210,31 @@ function getNextValidFile(funcArr, fileInfo, currFunc) {
         do {
             var res = funcArr[currFunc](fileInfo);
         }
-        while (res && !isValidFile(fileInfo));
+        while (res && !fileInfo.isValidFile());
 
-        if (!isValidFile(fileInfo)) {
+        if (!fileInfo.isValidFile()) {
             // call the next function to try and find a file
             getNextValidFile(funcArr, fileInfo, ++currFunc);
         }
     }
 }
 
-// createServer
-// creates the server
-app.use('/', express.static(rootPath));
+// App initialization and server startup.
+var appInstance = createCuratorApp({
+    fileInfo: {
+        dir: 'D:\\OneDrive\\Photos\\2011\\2012-01-04',
+        validFileTypes: /\.gif|\.jpg|\.jpeg/i,
+    }
+});
 
-app.get('/file', function (req, res) {
+appInstance.fileInfo.getFiles();
+
+console.log(appInstance.fileInfo);
+
+// Server routing
+appInstance.expressInstance.use('/', express.static(rootPath));
+
+appInstance.expressInstance.get('/file', function (req, res) {
     var reqURL = url.parse(req.url, true);
     console.log("Received query: " + req.url + '\n');
     console.log(getQueryValueString(reqURL.query));
@@ -234,7 +242,7 @@ app.get('/file', function (req, res) {
     var filename = reqURL.query.filename || appInstance.fileInfo.currFile;
             
     // Serve the current image
-    if (!isValidFile(appInstance.fileInfo, filename)) {
+    if (!appInstance.fileInfo.isValidFile(filename)) {
         res.end();
     }
     else {
@@ -242,7 +250,7 @@ app.get('/file', function (req, res) {
     }
 });
 
-app.get('/currentFileInfo', function (req, res) {
+appInstance.expressInstance.get('/currentFileInfo', function (req, res) {
     var reqURL = url.parse(req.url, true);
     console.log("Received query: " + req.url + '\n');
     console.log(getQueryValueString(reqURL.query));
@@ -250,7 +258,7 @@ app.get('/currentFileInfo', function (req, res) {
     serveJavascriptObject(res, appInstance.fileInfo.fileMetaData[appInstance.fileInfo.currFile]);
 });
 
-app.get('/action', function (req, res) {
+appInstance.expressInstance.get('/action', function (req, res) {
     var reqURL = url.parse(req.url, true);
     console.log("Received query: " + req.url + '\n');
     console.log(getQueryValueString(reqURL.query));
@@ -288,10 +296,7 @@ app.get('/action', function (req, res) {
     }
 });
 
-
-// Server startup
-getFiles(appInstance.fileInfo);
-
-app.listen(8080, function () {
+// Server start
+appInstance.expressInstance.listen(8080, function () {
     console.log('Server running at ' + hostname + ' on port ' + port);
 })
