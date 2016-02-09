@@ -3,8 +3,7 @@ var fs = require('fs');
 var url = require('url');
 var express = require('express');
 
-var hostname = '192.168.0.102';
-var port = 8080;
+var serverPort = 8080;
 
 var rootPath = '../client';
 var defaultDoc = '/index.html';
@@ -18,7 +17,7 @@ var contentTypes = {
     '.css': "text/css",
 }
 
-var createfileMetaData = function (init) {
+var createfileMetadata = function (init) {
     init = init || {};
     var instance = {};
     instance.filename = init.filename || '';
@@ -38,7 +37,7 @@ var createfileInfo = function (init) {
     instance.currFile = init.currFile || undefined;
     instance.currFileIndex = init.currFileIndex || -1;
     instance.dirFiles = init.dirFiles || [];
-    instance.fileMetaData = init.fileMetaData || {};
+    instance.fileMetadata = init.fileMetadata || {};
     instance.validFileTypes = init.validFileTypes || /\.*/i;
     
     // getNextFile(fileInfo)
@@ -69,6 +68,57 @@ var createfileInfo = function (init) {
         return false;
     }
     
+    // getNextValidFile()
+    //
+    // Gets the next valid file
+    //
+    // Returns: true if a valid file was found, false otherwise
+    instance.getNextValidFile = function () {
+        return instance.getValidFile([instance.getNextFile, instance.getPrevFile]);
+    }
+    
+    // getPrevValidFile()
+    //
+    // Gets the previous valid file
+    //
+    // Returns: true if a valid file was found, false otherwise
+    instance.getPrevValidFile = function () {
+        return instance.getValidFile([instance.getPrevFile, instance.getNextFile]);
+    }
+    
+    // getNextValidFile(funcArr, fileInfo, currMethod)
+    //
+    // Uses an array of functions to try and find the next valid file
+    //
+    // funcArr : an array of functions with signature (fileInfo) => bool 
+    // each function in the array will be called until either the function returns false
+    // or the function sets a valid file for fileInfo.
+    //
+    // currFunc : the index into funcArr which indicates the function being called
+    //
+    // returns : true if a valid file was found, false otherwise
+    instance.getValidFile = function (funcArr, currFunc) {
+        currFunc = currFunc || 0;
+
+        if (currFunc < funcArr.length) {
+            // use the current method until it returns false or a valid file
+            // type is returned
+            do {
+                var res = funcArr[currFunc]();
+            }
+            while (res && !instance.isValidFile());
+
+            if (!instance.isValidFile()) {
+                // call the next function to try and find a file
+                instance.getValidFile(funcArr, ++currFunc);
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+    
     // getFiles()
     // 
     // Retrieves a list of files and sets the next valid file
@@ -77,7 +127,7 @@ var createfileInfo = function (init) {
     
         // build meta data
         while (instance.getNextFile()) {
-            instance.fileMetaData[instance.currFile] = createfileMetaData({
+            instance.fileMetadata[instance.currFile] = createfileMetadata({
                 filename: instance.currFile,
                 path: instance.dir,
                 keep: false,
@@ -88,8 +138,9 @@ var createfileInfo = function (init) {
         // return to start
         while (instance.getPrevFile());
 
+        // move to first valid file
         if (!instance.isValidFile()) {
-            getNextValidFile([instance.getNextFile, instance.getPrevFile], instance);
+            instance.getNextValidFile();
         }
     }
 
@@ -98,10 +149,36 @@ var createfileInfo = function (init) {
     // Determines if the next file is a valid file type
     instance.isValidFile = function (filename) {
         filename = (filename || instance.currFile) + "";
-        console.log("testing " + filename + " is valid");
-        return filename.match(instance.validFileTypes) && instance.fileMetaData[filename];
+        return filename.match(instance.validFileTypes) && instance.fileMetadata[filename];
     }
     
+    // getFileMetadata(filename)
+    // 
+    // Gets the file meta data for the given filename or the current file if filename is undefined or null
+    //
+    // filename: the filename to get meta data for or undefined/null if the current file is to be used
+    instance.getFileMetadata = function (filename) {
+        filename = filename || instance.currFile;
+        return instance.fileMetadata[filename];
+    }
+    
+    // updateMetadata(filename, val)
+    //
+    // filename: the name of the metadata to update or if undefined/null the current file is used
+    // val: an object representing the properties of the metadata to update
+    instance.updateFileMetadata = function (filename, val) {
+        filename = filename || instance.currFile;
+        var metadata = instance.getFileMetadata(filename);
+        for (var key in val) {
+            if (metadata.hasOwnProperty(key)) {
+                metadata[key] = val[key];
+            }
+        }
+    }
+    
+    // initialize the instance, this blocks while reading the directory
+    instance.getFiles();
+
     return instance;
 }
 
@@ -190,46 +267,13 @@ function serveJavascriptObject(res, obj, callback) {
     }
 }
 
-// getNextValidFile(funcArr, fileInfo, currMethod)
-//
-// Uses an array of functions to try and find the next valid file
-//
-// funcArr : an array of functions with signature (fileInfo) => bool 
-// each function in the array will be called until either the function returns false
-// or the function sets a valid file for fileInfo.
-// 
-// fileInfo : the fileInfo object
-//
-// currFunc : the index into funcArr which indicates the function being called
-function getNextValidFile(funcArr, fileInfo, currFunc) {
-    currFunc = currFunc || 0;
-
-    if (currFunc < funcArr.length) {
-        // use the current method until it returns false or a valid file
-        // type is returned
-        do {
-            var res = funcArr[currFunc](fileInfo);
-        }
-        while (res && !fileInfo.isValidFile());
-
-        if (!fileInfo.isValidFile()) {
-            // call the next function to try and find a file
-            getNextValidFile(funcArr, fileInfo, ++currFunc);
-        }
-    }
-}
-
 // App initialization and server startup.
 var appInstance = createCuratorApp({
     fileInfo: {
-        dir: 'D:\\OneDrive\\Photos\\2011\\2012-01-04',
+        dir: 'C:\\Users\\lockhart\\OneDrive\\Photos\\2011\\2012-01-04',
         validFileTypes: /\.gif|\.jpg|\.jpeg/i,
     }
 });
-
-appInstance.fileInfo.getFiles();
-
-console.log(appInstance.fileInfo);
 
 // Server routing
 appInstance.expressInstance.use('/', express.static(rootPath));
@@ -255,48 +299,50 @@ appInstance.expressInstance.get('/currentFileInfo', function (req, res) {
     console.log("Received query: " + req.url + '\n');
     console.log(getQueryValueString(reqURL.query));
 
-    serveJavascriptObject(res, appInstance.fileInfo.fileMetaData[appInstance.fileInfo.currFile]);
+    serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata());
 });
 
-appInstance.expressInstance.get('/action', function (req, res) {
+appInstance.expressInstance.get('/action', function (req, res, next) {
     var reqURL = url.parse(req.url, true);
     console.log("Received query: " + req.url + '\n');
     console.log(getQueryValueString(reqURL.query));
 
     // Button actions
     if (reqURL.query.button === 'prev') {
-        getNextValidFile([appInstance.fileInfo.getPrevFile, appInstance.fileInfo.getNextFile], appInstance.fileInfo);
+        appInstance.fileInfo.getPrevValidFile();
         if (reqURL.query.ajax === 'true') {
-            serveJavascriptObject(res, appInstance.fileInfo.fileMetaData[appInstance.fileInfo.currFile]);
+            serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata());
             return;
         }
     }
     else if (reqURL.query.button === 'next') {
-        getNextValidFile([appInstance.fileInfo.getNextFile, appInstance.fileInfo.getPrevFile], appInstance.fileInfo);
+        appInstance.fileInfo.getNextValidFile();
         if (reqURL.query.ajax === 'true') {
-            serveJavascriptObject(res, appInstance.fileInfo.fileMetaData[appInstance.fileInfo.currFile]);
+            serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata());
             return;
         }
     }
     else if (reqURL.query.button === 'keep') {
         var filename = reqURL.query.filename;
-        appInstance.fileInfo.fileMetaData[filename].keep = true;
+        appInstance.fileInfo.updateFileMetadata(filename, { keep: true });
         if (reqURL.query.ajax === 'true') {
-            serveJavascriptObject(res, appInstance.fileInfo.fileMetaData[filename]);
+            serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata(filename));
             return;
         }
     }
     else if (reqURL.query.button === 'unkeep') {
         var filename = reqURL.query.filename;
-        appInstance.fileInfo.fileMetaData[filename].keep = false;
+        appInstance.fileInfo.updateFileMetadata(filename, { keep: false });
         if (reqURL.query.ajax === 'true') {
-            serveJavascriptObject(res, appInstance.fileInfo.fileMetaData[filename]);
+            serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata(filename));
             return;
         }
     }
+    
+    res.redirect('/');
 });
 
 // Server start
 appInstance.expressInstance.listen(8080, function () {
-    console.log('Server running at ' + hostname + ' on port ' + port);
+    console.log('Server running on port ' + serverPort);
 })
