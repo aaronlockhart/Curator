@@ -7,6 +7,7 @@ var serverPort = 8080;
 
 var rootPath = '../client';
 var defaultDoc = '/index.html';
+var fileInfoName = 'fileInfo.txt';
 
 var contentTypes = {
     '.jpg': 'image/jpg',
@@ -17,7 +18,7 @@ var contentTypes = {
     '.css': "text/css",
 }
 
-var createfileMetadata = function (init) {
+var createFileMetadata = function (init) {
     init = init || {};
     var instance = {};
     instance.filename = init.filename || '';
@@ -25,11 +26,12 @@ var createfileMetadata = function (init) {
     instance.keep = init.keep || false;
     instance.tags = init.tags || [];
     instance.index = init.index || -1;
-
+    console.log(init);
+    console.log(instance);
     return instance;
 }
 
-var createfileInfo = function (init) {
+var createFileInfo = function (init) {
     init = init || {};
     var instance = {};
 
@@ -118,21 +120,28 @@ var createfileInfo = function (init) {
 
         return false;
     }
-    
-    // getFiles()
-    // 
-    // Retrieves a list of files and sets the next valid file
-    instance.getFiles = function () {
+
+    instance.initializeMetadata = function () {
         instance.dirFiles = fs.readdirSync(instance.dir);
-    
+        
+        // make sure we're at the start..
+        while (instance.getPrevFile());
+        
         // build meta data
         while (instance.getNextFile()) {
-            instance.fileMetadata[instance.currFile] = createfileMetadata({
-                filename: instance.currFile,
-                path: instance.dir,
-                keep: false,
-                index: instance.currFileIndex,
-            })
+            console.log("Building metadata for " + instance.currFile + " at index " + instance.currFileIndex + "\n");
+            if (!instance.fileMetadata.hasOwnProperty(instance.currFile)) {
+                instance.fileMetadata[instance.currFile] = createFileMetadata({
+                    filename: instance.currFile,
+                    path: instance.dir,
+                    keep: false,
+                    index: instance.currFileIndex,
+                })
+            }
+            else {
+                // update the index
+                instance.fileMetaData[instance.currFile].index = instance.currFileIndex;
+            }
         }
     
         // return to start
@@ -142,6 +151,24 @@ var createfileInfo = function (init) {
         if (!instance.isValidFile()) {
             instance.getNextValidFile();
         }
+    }
+    
+    // initialize()
+    // 
+    // Retrieves a list of files and sets the next valid file
+    instance.initialize = function () {
+        try {
+            var fileInfo = fs.readFileSync(fileInfoName);
+            console.log("Loading existing file " + fileInfoName);
+            instance = createFileInfo(fileInfo);
+            instance.initializeMetadata();
+        }
+        catch (e) {
+            console.log("Existing file " + fileInfoName + " not found, initializing meta data for " + instance.dir);
+            instance.initializeMetadata();
+        }
+
+        console.log(instance.fileMetadata);
     }
 
     // isValidFile(fileInfo)
@@ -175,9 +202,14 @@ var createfileInfo = function (init) {
             }
         }
     }
-    
-    // initialize the instance, this blocks while reading the directory
-    instance.getFiles();
+
+    instance.saveFileInfo = function () {
+        var content = JSON.stringify(instance);
+        fs.writeFile(fileInfoName, content, function (err) {
+            if (err) throw err;
+            console.log('Saved fileinfo');
+        })
+    }
 
     return instance;
 }
@@ -186,7 +218,10 @@ var createCuratorApp = function (init) {
     init = init || {};
     var instance = {};
 
-    instance.fileInfo = createfileInfo(init.fileInfo);
+    instance.fileInfo = createFileInfo(init.fileInfo);
+    instance.fileInfo.initialize();
+    instance.fileInfo.saveFileInfo();
+
     instance.expressInstance = express();
 
     return instance;
@@ -338,7 +373,7 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
             return;
         }
     }
-    
+
     res.redirect('/');
 });
 
