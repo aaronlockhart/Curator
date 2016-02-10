@@ -7,7 +7,7 @@ var serverPort = 8080;
 
 var rootPath = '../client';
 var defaultDoc = '/index.html';
-var fileInfoName = 'fileInfo.txt';
+var fileInfoName = './data/fileInfo.txt';
 
 var contentTypes = {
     '.jpg': 'image/jpg',
@@ -25,9 +25,8 @@ var createFileMetadata = function (init) {
     instance.path = init.path || '';
     instance.keep = init.keep || false;
     instance.tags = init.tags || [];
-    instance.index = init.index || -1;
-    console.log(init);
-    console.log(instance);
+    instance.index = init.index >= 0 ? init.index : -1;
+
     return instance;
 }
 
@@ -37,10 +36,10 @@ var createFileInfo = function (init) {
 
     instance.dir = init.dir || '';
     instance.currFile = init.currFile || undefined;
-    instance.currFileIndex = init.currFileIndex || -1;
     instance.dirFiles = init.dirFiles || [];
     instance.fileMetadata = init.fileMetadata || {};
     instance.validFileTypes = init.validFileTypes || /\.*/i;
+    instance.currFileIndex = -1;
     
     // getNextFile(fileInfo)
     //
@@ -122,6 +121,14 @@ var createFileInfo = function (init) {
     }
 
     instance.initializeMetadata = function () {
+        console.log("Initializing metadata");
+
+        for (var key in instance.fileMetadata) {
+            if (instance.fileMetadata.hasOwnProperty(key)) {
+                instance.fileMetadata[key].touch = false;
+            }
+        }
+
         instance.dirFiles = fs.readdirSync(instance.dir);
         
         // make sure we're at the start..
@@ -137,20 +144,29 @@ var createFileInfo = function (init) {
                     keep: false,
                     index: instance.currFileIndex,
                 })
+
+                instance.fileMetadata[instance.currFile].touch = true;
             }
             else {
                 // update the index
-                instance.fileMetaData[instance.currFile].index = instance.currFileIndex;
+                instance.fileMetadata[instance.currFile].index = instance.currFileIndex;
+                instance.fileMetadata[instance.currFile].touch = true;
             }
         }
-    
-        // return to start
-        while (instance.getPrevFile());
 
-        // move to first valid file
-        if (!instance.isValidFile()) {
-            instance.getNextValidFile();
+        for (var key in instance.fileMetadata) {
+            if (instance.fileMetadata.hasOwnProperty(key)) {
+                if (!instance.fileMetadata[key].touch) {
+                    delete instance.fileMetadata[key];
+                }
+                else {
+                    delete instance.fileMetadata[key].touch;
+                }
+            }
         }
+
+        console.log("Metadata initialized");
+        console.log(instance.fileMetadata);
     }
     
     // initialize()
@@ -160,15 +176,21 @@ var createFileInfo = function (init) {
         try {
             var fileInfo = fs.readFileSync(fileInfoName);
             console.log("Loading existing file " + fileInfoName);
-            instance = createFileInfo(fileInfo);
+            instance = createFileInfo(JSON.parse(fileInfo));
             instance.initializeMetadata();
         }
         catch (e) {
             console.log("Existing file " + fileInfoName + " not found, initializing meta data for " + instance.dir);
             instance.initializeMetadata();
         }
-
-        console.log(instance.fileMetadata);
+        
+        // move to start
+        while (instance.getPrevFile());
+        
+        // move to first valid file
+        if (!instance.isValidFile()) {
+            instance.getNextValidFile();
+        }
     }
 
     // isValidFile(fileInfo)
@@ -203,12 +225,17 @@ var createFileInfo = function (init) {
         }
     }
 
-    instance.saveFileInfo = function () {
+    instance.saveFileInfo = function (sync) {
         var content = JSON.stringify(instance);
-        fs.writeFile(fileInfoName, content, function (err) {
-            if (err) throw err;
-            console.log('Saved fileinfo');
-        })
+        if (sync) {
+            fs.writeFileSync(fileInfoName, content);
+        }
+        else {
+            fs.writeFile(fileInfoName, content, function (err) {
+                if (err) throw err;
+                console.log('Saved fileinfo');
+            })
+        }
     }
 
     return instance;
@@ -220,7 +247,7 @@ var createCuratorApp = function (init) {
 
     instance.fileInfo = createFileInfo(init.fileInfo);
     instance.fileInfo.initialize();
-    instance.fileInfo.saveFileInfo();
+    instance.fileInfo.saveFileInfo(true);
 
     instance.expressInstance = express();
 
@@ -305,7 +332,7 @@ function serveJavascriptObject(res, obj, callback) {
 // App initialization and server startup.
 var appInstance = createCuratorApp({
     fileInfo: {
-        dir: 'C:\\Users\\lockhart\\OneDrive\\Photos\\2011\\2012-01-04',
+        dir: 'D:\\OneDrive\\Photos\\2011\\2012-01-04',
         validFileTypes: /\.gif|\.jpg|\.jpeg/i,
     }
 });
@@ -381,3 +408,13 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
 appInstance.expressInstance.listen(8080, function () {
     console.log('Server running on port ' + serverPort);
 })
+
+process.on('SIGINT', function() {
+    console.log('Caught SIGINT');
+    process.exit();
+});
+
+process.on('exit', function() {
+    console.log("Exiting..");
+    appInstance.fileInfo.saveFileInfo(true);
+});
