@@ -3,12 +3,12 @@ var fs = require('fs');
 var url = require('url');
 var express = require('express');
 
-var serverPort = 8080;
-
+// app configuration data
 var rootPath = '../client';
-var defaultDoc = '/index.html';
-var fileInfoName = './data/fileInfo.txt';
-
+var fileInfoFilename = './data/fileInfo.txt';
+var imageSrcDir = 'C:\\Users\\lockhart\\OneDrive\\Photos\\2011\\2012-01-04';
+var validFileTypes = /\.gif|\.jpg|\.jpeg/i;
+var serverPort = 8080;
 var contentTypes = {
     '.jpg': 'image/jpg',
     '.jpeg': 'image/jpg',
@@ -18,6 +18,9 @@ var contentTypes = {
     '.css': "text/css",
 }
 
+RegExp.prototype.toJSON = RegExp.prototype.toString;
+
+// Constructors (TODO: Move to node module)
 var createFileMetadata = function (init) {
     init = init || {};
     var instance = {};
@@ -39,6 +42,7 @@ var createFileInfo = function (init) {
     instance.dirFiles = init.dirFiles || [];
     instance.fileMetadata = init.fileMetadata || {};
     instance.validFileTypes = init.validFileTypes || /\.*/i;
+    instance.fileInfoFilename = init.fileInfoFilename || './fileInfo.txt';
     instance.currFileIndex = -1;
     
     // getNextFile(fileInfo)
@@ -120,6 +124,9 @@ var createFileInfo = function (init) {
         return false;
     }
 
+    // initializeMetadata()
+    //
+    // Initializes the file meta data, deleting old metadata of non-existant files and reindexing to the current directory
     instance.initializeMetadata = function () {
         console.log("Initializing metadata");
 
@@ -174,13 +181,17 @@ var createFileInfo = function (init) {
     // Retrieves a list of files and sets the next valid file
     instance.initialize = function () {
         try {
-            var fileInfo = fs.readFileSync(fileInfoName);
-            console.log("Loading existing file " + fileInfoName);
-            instance = createFileInfo(JSON.parse(fileInfo));
+            var fileInfoString = fs.readFileSync(instance.fileInfoFilename);
+            console.log("Loading existing file " + instance.fileInfoFilename);
+            var fileInfoData = JSON.parse(fileInfoString)
+            fileInfoData.dir = instance.dir;
+            var fragments = fileInfoData.validFileTypes.match(/\/(.*?)\/([gimy])?$/);
+            fileInfoData.validFileTypes = new RegExp(fragments[1], fragments[2] || '');
+            instance = createFileInfo(fileInfoData);
             instance.initializeMetadata();
         }
         catch (e) {
-            console.log("Existing file " + fileInfoName + " not found, initializing meta data for " + instance.dir);
+            console.log("Existing file " + instance.fileInfoFilename + " not found, initializing meta data for " + instance.dir);
             instance.initializeMetadata();
         }
         
@@ -225,13 +236,17 @@ var createFileInfo = function (init) {
         }
     }
 
+    // saveFileInfo(sync)
+    // 
+    // Saves the file info to a specified location
+    // sync: whether to the file is written synchronously (true) or not (false)
     instance.saveFileInfo = function (sync) {
         var content = JSON.stringify(instance);
         if (sync) {
-            fs.writeFileSync(fileInfoName, content);
+            fs.writeFileSync(instance.fileInfoFilename, content);
         }
         else {
-            fs.writeFile(fileInfoName, content, function (err) {
+            fs.writeFile(instance.fileInfoFilename, content, function (err) {
                 if (err) throw err;
                 console.log('Saved fileinfo');
             })
@@ -253,6 +268,8 @@ var createCuratorApp = function (init) {
 
     return instance;
 }
+
+// Helper functions
 
 // getQueryValueString(query, strNewline)
 //
@@ -332,8 +349,9 @@ function serveJavascriptObject(res, obj, callback) {
 // App initialization and server startup.
 var appInstance = createCuratorApp({
     fileInfo: {
-        dir: 'D:\\OneDrive\\Photos\\2011\\2012-01-04',
-        validFileTypes: /\.gif|\.jpg|\.jpeg/i,
+        dir: imageSrcDir,
+        validFileTypes: validFileTypes,
+        fileInfoFilename: fileInfoFilename,
     }
 });
 
@@ -409,12 +427,13 @@ appInstance.expressInstance.listen(8080, function () {
     console.log('Server running on port ' + serverPort);
 })
 
-process.on('SIGINT', function() {
+// Server shutdown hooks
+process.on('SIGINT', function () {
     console.log('Caught SIGINT');
     process.exit();
 });
 
-process.on('exit', function() {
+process.on('exit', function () {
     console.log("Exiting..");
     appInstance.fileInfo.saveFileInfo(true);
 });
