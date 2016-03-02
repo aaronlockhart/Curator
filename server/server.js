@@ -8,7 +8,7 @@ var util = require('./util');
 // app configuration data
 var rootPath = '../client';
 var fileInfoFilename = './data/fileInfo.txt';
-var imageSrcDir = 'C:\\Users\\lockhart\\OneDrive\\Photos\\2011\\2012-01-04';
+var imageSrcDir = 'D:\\OneDrive\\Photos\\2011\\2012-01-04';
 var validFileTypes = /\.gif|\.jpg|\.jpeg/i;
 var serverPort = 8080;
 
@@ -32,14 +32,14 @@ appInstance.expressInstance.get('/file', function (req, res) {
     console.log("Received query: " + req.url + '\n');
     console.log(util.getQueryValueString(reqURL.query));
 
-    var filename = reqURL.query.filename || appInstance.fileInfo.currFile;
+    var filename = reqURL.query.filename;
             
     // Serve the current image
     if (!appInstance.fileInfo.isValidFile(filename)) {
         res.end();
     }
     else {
-        util.serveFile(res, appInstance.fileInfo.dir + '\\' + filename);
+        util.serveFile(res, appInstance.fileInfo.getFilePath(filename));
     }
 });
 
