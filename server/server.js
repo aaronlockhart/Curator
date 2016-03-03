@@ -8,7 +8,6 @@ var util = require('./util');
 // app configuration data
 var rootPath = '../client';
 var fileInfoFilename = './data/fileInfo.txt';
-var imageSrcDir = 'C:\\Users\\Public\\Pictures\\Sample Pictures';
 var validFileTypes = /\.gif|\.jpg|\.jpeg/i;
 var serverPort = 8080;
 var backupDir = ['D:\\OneDrive\\Photos'];
@@ -19,7 +18,6 @@ RegExp.prototype.toJSON = RegExp.prototype.toString;
 var appInstance = app({
     backupDir: backupDir,
     fileInfo: {
-        dir: imageSrcDir,
         validFileTypes: validFileTypes,
         fileInfoFilename: fileInfoFilename,
     }

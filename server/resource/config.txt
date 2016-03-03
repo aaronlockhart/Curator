@@ -1,0 +1,4 @@
+{
+	"imgSrcDir": "C:\\Users\\Public\\Pictures\\Sample Pictures",
+    "backupDir": "D:\\OneDrive\\Photos"
+}

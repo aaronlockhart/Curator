@@ -4,12 +4,18 @@ var fs = require('fs');
 
 var fileInfo = require('./fileinfo');
 var express = require('express');
+var fs = require('fs');
 
 var createCuratorApp = function (init) {
     init = init || {};
+    
+    // load in config settings
+    var configString = fs.readFileSync("./resource/config.txt");
+    var configData = JSON.parse(configString);
 
-    var backupDir = init.backupDir || '/data';
-
+    init.fileInfo.dir = configData["imgSrcDir"];
+    var backupDir = configData["backupDir"] || './data';
+    
     var instance = {
         // fileInfo manages the metadata for all the files in the file set
         fileInfo: fileInfo(init.fileInfo),
@@ -53,7 +59,7 @@ var createCuratorApp = function (init) {
             }
         },
     };
-    
+
     // Initialize
     instance.fileInfo.initialize();
     instance.fileInfo.saveFileInfo(true);
