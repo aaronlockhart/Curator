@@ -8,7 +8,6 @@ var util = require('./util');
 // app configuration data
 var rootPath = '../client';
 var fileInfoFilename = './data/fileInfo.txt';
-var imageSrcDir = 'C:\\Users\\Public\\Pictures\\Sample Pictures';
 var validFileTypes = /\.gif|\.jpg|\.jpeg/i;
 var serverPort = 8080;
 
@@ -17,7 +16,6 @@ RegExp.prototype.toJSON = RegExp.prototype.toString;
 // App initialization and server startup.
 var appInstance = app({
     fileInfo: {
-        dir: imageSrcDir,
         validFileTypes: validFileTypes,
         fileInfoFilename: fileInfoFilename,
     }
