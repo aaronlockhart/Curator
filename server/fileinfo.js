@@ -3,8 +3,9 @@ var fs = require('fs');
 
 var createFileInfo = function (init) {
     init = init || {};
-    var instance = {};
 
+    
+    // Private Data ////////////////////////////////////
     var dir = init.dir || '';
     var currFile = init.currFile || undefined;
     var dirFiles = init.dirFiles || [];
@@ -12,6 +13,8 @@ var createFileInfo = function (init) {
     var validFileTypes = init.validFileTypes || /\.*/i;
     var fileInfoFilename = init.fileInfoFilename || './fileInfo.txt';
     var currFileIndex = -1;
+    
+    // Private Methods /////////////////////////////////
     
     // getNextFile(fileInfo)
     //
@@ -26,7 +29,7 @@ var createFileInfo = function (init) {
 
         return false;
     }
-
+    
     // getPrevFile(fileInfo)
     //
     // Gets the previous file for the given fileInfo object
@@ -39,24 +42,6 @@ var createFileInfo = function (init) {
         }
 
         return false;
-    }
-    
-    // getNextValidFile()
-    //
-    // Gets the next valid file
-    //
-    // Returns: true if a valid file was found, false otherwise
-    instance.getNextValidFile = function () {
-        return getValidFile([getNextFile, getPrevFile]);
-    }
-    
-    // getPrevValidFile()
-    //
-    // Gets the previous valid file
-    //
-    // Returns: true if a valid file was found, false otherwise
-    instance.getPrevValidFile = function () {
-        return getValidFile([getPrevFile, getNextFile]);
     }
     
     // getValidFile(funcArr, fileInfo, currMethod)
@@ -91,7 +76,15 @@ var createFileInfo = function (init) {
 
         return false;
     }
-
+    
+    // isValidFile(fileInfo)
+    //
+    // Determines if the next file is a valid file type
+    var isValidFile = function (filename) {
+        filename = (filename || currFile) + "";
+        return filename.match(validFileTypes) && metadata[filename];
+    }
+    
     // initializeMetadata()
     //
     // Initializes the file meta data, deleting old metadata of non-existant files and reindexing to the current directory
@@ -143,94 +136,105 @@ var createFileInfo = function (init) {
         console.log("Metadata initialized");
         console.log(metadata);
     }
-    
-    // initialize()
-    // 
-    // Retrieves a list of files and sets the next valid file
-    instance.initialize = function () {
-        try {
-            var fileInfoString = fs.readFileSync(fileInfoFilename);
-            console.log("Loading existing file " + fileInfoFilename);
-            var fileInfoData = JSON.parse(fileInfoString)
-            fileInfoData.dir = dir;
-            var fragments = fileInfoData.validFileTypes.match(/\/(.*?)\/([gimy])?$/);
-            fileInfoData.validFileTypes = new RegExp(fragments[1], fragments[2] || '');
-            instance = createFileInfo(fileInfoData);
-            initializeMetadata();
-        }
-        catch (e) {
-            console.log("Existing file " + fileInfoFilename + " not found, initializing meta data for " + dir);
-            initializeMetadata();
-        }
-        
-        // move to start
-        while (getPrevFile());
-        
-        // move to first valid file
-        if (!isValidFile()) {
-            this.getNextValidFile();
-        }
-    }
-    
-    instance.isValidFile = function (filename) {
-        return isValidFile(filename);
-    }
 
-    // isValidFile(fileInfo)
-    //
-    // Determines if the next file is a valid file type
-    var isValidFile = function (filename) {
-        filename = (filename || currFile) + "";
-        return filename.match(validFileTypes) && metadata[filename];
-    }
+    // Create a new instance object
+    return {
+        // getNextValidFile()
+        //
+        // Gets the next valid file
+        //
+        // Returns: true if a valid file was found, false otherwise
+        getNextValidFile: function () {
+            return getValidFile([getNextFile, getPrevFile]);
+        },
     
-    // getFileMetadata(filename)
-    // 
-    // Gets the file meta data for the given filename or the current file if filename is undefined or null
-    //
-    // filename: the filename to get meta data for or undefined/null if the current file is to be used
-    instance.getFileMetadata = function (filename) {
-        filename = filename || currFile;
-        return metadata[filename];
-    }
+        // getPrevValidFile()
+        //
+        // Gets the previous valid file
+        //
+        // Returns: true if a valid file was found, false otherwise
+        getPrevValidFile: function () {
+            return getValidFile([getPrevFile, getNextFile]);
+        },
     
-    // updateMetadata(filename, val)
-    //
-    // filename: the name of the metadata to update or if undefined/null the current file is used
-    // val: an object representing the properties of the metadata to update
-    instance.updateFileMetadata = function (filename, val) {
-        filename = filename || currFile;
-        var filedata = this.getFileMetadata(filename);
-        for (var key in val) {
-            if (filedata.hasOwnProperty(key)) {
-                filedata[key] = val[key];
+        // initialize()
+        // 
+        // Retrieves a list of files and sets the next valid file
+        initialize: function () {
+            try {
+                var fileInfoString = fs.readFileSync(fileInfoFilename);
+                console.log("Loading existing file " + fileInfoFilename);
+                var fileInfoData = JSON.parse(fileInfoString)
+                fileInfoData.dir = dir;
+                var fragments = fileInfoData.validFileTypes.match(/\/(.*?)\/([gimy])?$/);
+                fileInfoData.validFileTypes = new RegExp(fragments[1], fragments[2] || '');
+                instance = createFileInfo(fileInfoData);
+                initializeMetadata();
             }
-        }
-    }
+            catch (e) {
+                console.log("Existing file " + fileInfoFilename + " not found, initializing meta data for " + dir);
+                initializeMetadata();
+            }
+        
+            // move to start
+            while (getPrevFile());
+        
+            // move to first valid file
+            if (!isValidFile()) {
+                this.getNextValidFile();
+            }
+        },
 
-    // saveFileInfo(sync)
-    // 
-    // Saves the file info to a specified location
-    // sync: whether to the file is written synchronously (true) or not (false)
-    instance.saveFileInfo = function (sync) {
-        var content = JSON.stringify({ "metadata": metadata });
-        if (sync) {
-            fs.writeFileSync(fileInfoFilename, content);
-        }
-        else {
-            fs.writeFile(fileInfoFilename, content, function (err) {
-                if (err) throw err;
-                console.log('Saved fileinfo');
-            })
-        }
-    }
+        isValidFile: function (filename) {
+            return isValidFile(filename);
+        },
+
+        // getFileMetadata(filename)
+        // 
+        // Gets the file meta data for the given filename or the current file if filename is undefined or null
+        //
+        // filename: the filename to get meta data for or undefined/null if the current file is to be used
+        getFileMetadata: function (filename) {
+            filename = filename || currFile;
+            return metadata[filename];
+        },
     
-    instance.getFilePath = function (filename) {
-        var filedata = this.getFileMetadata(filename);
-        return filedata.path + '\\' + filedata.filename;
-    }
+        // updateMetadata(filename, val)
+        //
+        // filename: the name of the metadata to update or if undefined/null the current file is used
+        // val: an object representing the properties of the metadata to update
+        updateFileMetadata: function (filename, val) {
+            filename = filename || currFile;
+            var filedata = this.getFileMetadata(filename);
+            for (var key in val) {
+                if (filedata.hasOwnProperty(key)) {
+                    filedata[key] = val[key];
+                }
+            }
+        },
 
-    return instance;
+        // saveFileInfo(sync)
+        // 
+        // Saves the file info to a specified location
+        // sync: whether to the file is written synchronously (true) or not (false)
+        saveFileInfo: function (sync) {
+            var content = JSON.stringify({ "metadata": metadata });
+            if (sync) {
+                fs.writeFileSync(fileInfoFilename, content);
+            }
+            else {
+                fs.writeFile(fileInfoFilename, content, function (err) {
+                    if (err) throw err;
+                    console.log('Saved fileinfo');
+                })
+            }
+        },
+
+        getFilePath: function (filename) {
+            var filedata = this.getFileMetadata(filename);
+            return filedata.path + '\\' + filedata.filename;
+        },
+    };
 }
 
 module.exports = createFileInfo;

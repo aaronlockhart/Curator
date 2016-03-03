@@ -12,7 +12,6 @@ var imageSrcDir = 'D:\\OneDrive\\Photos\\2011\\2012-01-04';
 var validFileTypes = /\.gif|\.jpg|\.jpeg/i;
 var serverPort = 8080;
 
-
 RegExp.prototype.toJSON = RegExp.prototype.toString;
 
 // App initialization and server startup.
