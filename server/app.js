@@ -1,3 +1,6 @@
+// app.js
+// Creates a new application instance
+
 var fileInfo = require('./fileinfo');
 var express = require('express');
 
