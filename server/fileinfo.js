@@ -7,12 +7,25 @@ var createFileInfo = function (init) {
     init = init || {};
     
     // Private Data ////////////////////////////////////
+    // The current directory
     var dir = init.dir || '';
+    
+    // The current file
     var currFile = init.currFile || undefined;
+    
+    // An array of the current files in the directory
     var dirFiles = init.dirFiles || [];
+    
+    // Metadata for all the files in the current directory
     var metadata = init.metadata || {};
+    
+    // A regular expression containing the types of file extensions that are considered valid for display (i.e .jpg, .gif)
     var validFileTypes = init.validFileTypes || /\.*/i;
+    
+    // Path to where metadata should be stored
     var fileInfoFilename = init.fileInfoFilename || './fileInfo.txt';
+    
+    // The index into dirFiles of the current file
     var currFileIndex = -1;
     
     // Private Methods /////////////////////////////////
@@ -95,6 +108,9 @@ var createFileInfo = function (init) {
 
         for (var key in metadata) {
             if (metadata.hasOwnProperty(key)) {
+                
+                // make into a real metadata object
+                metadata[key] = fileMetadata(metadata[key]);
                 metadata[key].touch = false;
             }
         }
@@ -217,6 +233,15 @@ var createFileInfo = function (init) {
                 }
             }
         },
+        
+        deleteFileMetadata: function (filedata) {
+            var matchingMeta = metadata[filedata.filename];
+            if (matchingMeta) {
+                console.log("Deleting metadata " + filedata.filename);
+                delete metadata[filedata.filename];
+                dirFiles.splice(filedata.index, 1);
+            }
+        },
 
         // saveFileInfo(sync)
         // 
@@ -240,7 +265,23 @@ var createFileInfo = function (init) {
         // Gets the path to the given file name so that it can be located on disk.
         getFilePath: function (filename) {
             var filedata = this.getFileMetadata(filename);
-            return filedata.path + '\\' + filedata.filename;
+            return filedata.getPath();
+        },
+        
+        // getFilteredMetadata
+        //
+        // Returns an array of filtered metadata
+        getFilteredMetadata: function (filter) {
+            var result = [];
+            
+            for (var i = 0; i < dirFiles.length; i++) {
+                var filedata = this.getFileMetadata(dirFiles[i]);
+                if (filter(filedata)) {
+                    result.push(fileMetadata(filedata));
+                }
+            }
+            
+            return result;
         },
     };
 }

@@ -11,11 +11,13 @@ var fileInfoFilename = './data/fileInfo.txt';
 var imageSrcDir = 'C:\\Users\\Public\\Pictures\\Sample Pictures';
 var validFileTypes = /\.gif|\.jpg|\.jpeg/i;
 var serverPort = 8080;
+var backupDir = ['D:\\OneDrive\\Photos'];
 
 RegExp.prototype.toJSON = RegExp.prototype.toString;
 
 // App initialization and server startup.
 var appInstance = app({
+    backupDir: backupDir,
     fileInfo: {
         dir: imageSrcDir,
         validFileTypes: validFileTypes,
@@ -26,6 +28,7 @@ var appInstance = app({
 // Server routing
 appInstance.expressInstance.use('/', express.static(rootPath));
 
+// Handle client requests for a given file
 appInstance.expressInstance.get('/file', function (req, res) {
     var reqURL = url.parse(req.url, true);
     console.log("Received query: " + req.url + '\n');
@@ -42,6 +45,7 @@ appInstance.expressInstance.get('/file', function (req, res) {
     }
 });
 
+// Handle client requests to get file information for the current file
 appInstance.expressInstance.get('/currentFileInfo', function (req, res) {
     var reqURL = url.parse(req.url, true);
     console.log("Received query: " + req.url + '\n');
@@ -50,12 +54,14 @@ appInstance.expressInstance.get('/currentFileInfo', function (req, res) {
     util.serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata());
 });
 
+
+// Actions (client requests to do something..)
 appInstance.expressInstance.get('/action', function (req, res, next) {
     var reqURL = url.parse(req.url, true);
     console.log("Received query: " + req.url + '\n');
     console.log(util.getQueryValueString(reqURL.query));
 
-    // Button actions
+    // get the previous file from the set
     if (reqURL.query.button === 'prev') {
         appInstance.fileInfo.getPrevValidFile();
         if (reqURL.query.ajax === 'true') {
@@ -63,6 +69,7 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
             return;
         }
     }
+    // get the next file from the set
     else if (reqURL.query.button === 'next') {
         appInstance.fileInfo.getNextValidFile();
         if (reqURL.query.ajax === 'true') {
@@ -70,6 +77,7 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
             return;
         }
     }
+    // mark a file for backup
     else if (reqURL.query.button === 'keep') {
         var filename = reqURL.query.filename;
         appInstance.fileInfo.updateFileMetadata(filename, { keep: true });
@@ -78,6 +86,7 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
             return;
         }
     }
+    // unmark the file for backup
     else if (reqURL.query.button === 'unkeep') {
         var filename = reqURL.query.filename;
         appInstance.fileInfo.updateFileMetadata(filename, { keep: false });
@@ -86,7 +95,14 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
             return;
         }
     }
+    else if (reqURL.query.button === 'move') {
+        appInstance.moveFilesToBackupFolder();
+        if (reqURL.query.ajax === 'true') {
+            return;
+        }
+    }
 
+    // This will redirect back to the root path so that the form buttons will work
     res.redirect('/');
 });
 
