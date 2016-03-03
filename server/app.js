@@ -20,10 +20,10 @@ var createCuratorApp = function (init) {
         // fileInfo manages the metadata for all the files in the file set
         fileInfo: fileInfo(init.fileInfo),
         
-        // An instance of express used for routing server requests
+        // An instance of express used for routing server requests.
         expressInstance: express(),
         
-        // Moves the files marked for backup to the one drive folder
+        // Moves the files marked for backup to the backup folder.
         moveFilesToBackupFolder: function () {
             var keepFiles = this.fileInfo.getFilteredMetadata(function (data) { return data.keep == true; });
             
@@ -34,6 +34,8 @@ var createCuratorApp = function (init) {
                 (function(src, dst, meta, app) {
                     util.copyFile(currentFilePath, backupFilePath, function () {
                         console.log("Done copying file " + meta.filename);
+                        meta.backedUp = true;
+                        app.fileInfo.updateFileMetadata(meta.filename, meta);
                     });
                 })(currentFilePath, backupFilePath, keepFiles[i], this);
             }

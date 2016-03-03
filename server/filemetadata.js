@@ -9,6 +9,7 @@ var createFileMetadata = function (init) {
         keep: init.keep || false,
         tags: init.tags || [],
         index: init.index >= 0 ? init.index : -1,
+        backedUp: init.backedUp === undefined ? false : init.backedUp,
         
         // Gets the full path to the file including filename
         getPath: function() {
