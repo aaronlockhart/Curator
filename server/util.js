@@ -1,4 +1,6 @@
 var fs = require('fs');
+var pathModule = require('path');
+var mkdirpModule = require('mkdirp');
 
 var contentTypes = {
     '.jpg': 'image/jpg',
@@ -86,3 +88,38 @@ module.exports.serveJavascriptObject = function(res, obj, callback) {
     }
 }
 
+// copyFile(srcFilePath, dstFilePath)
+//
+// Copy a file from the srcFilePath to dstFilePath asynchronously
+module.exports.copyFile = function (srcFilePath, dstFilePath, onComplete) {
+        console.log('Copying ' + srcFilePath + ' to ' + dstFilePath);
+        
+        var readStream = fs.createReadStream(srcFilePath);
+
+        readStream.on('error', function (err) {
+            console.log("Error on readstream: " + err);
+        });
+
+        // do the copy
+        readStream.on('open', function (fd) {
+            var dstDir = dstFilePath.substring(0, dstFilePath.lastIndexOf(pathModule.sep));
+            mkdirpModule(dstDir, function (err) {
+                if (err) {
+                    console.log("Failed to mkdirp " + dstDir + " Error:" + err);
+                }
+                else {
+                    var writeStream = fs.createWriteStream(dstFilePath);
+
+                    writeStream.on('error', function (err) {
+                        console.log("Error on writestream: " + err);
+                    });
+
+                    writeStream.on('finish', onComplete);
+
+                    writeStream.on('open', function (fd) {
+                        readStream.pipe(writeStream);
+                    })
+                }
+            });
+        });
+    }

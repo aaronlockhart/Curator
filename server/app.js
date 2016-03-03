@@ -1,10 +1,10 @@
-var fs = require('fs');
-
 // Creates a new application instance
-
 var fileInfo = require('./fileinfo');
 var express = require('express');
 var fs = require('fs');
+var mkdirpModule = require('mkdirp');
+var pathModule = require('path');
+var util = require('./util');
 
 var createCuratorApp = function (init) {
     init = init || {};
@@ -26,36 +26,16 @@ var createCuratorApp = function (init) {
         // Moves the files marked for backup to the one drive folder
         moveFilesToBackupFolder: function () {
             var keepFiles = this.fileInfo.getFilteredMetadata(function (data) { return data.keep == true; });
+            
             for (var i = 0; i < keepFiles.length; i++) {
                 var currentFilePath = keepFiles[i].getPath();
                 var backupFilePath = backupDir + keepFiles[i].getPartialPath();
-                var metadata = keepFiles[i];
-
-                console.log('Copying ' + currentFilePath + ' to ' + backupFilePath);
-
-                var readStream = fs.createReadStream(currentFilePath);
                 
-                readStream.on('error', function (err) {
-                    console.log("Error on readstream: " + err);
-                });
-
-                var writeStream = fs.createWriteStream(backupFilePath);
-                
-                writeStream.on('error', function (err) {
-                    console.log("Error on writestream: " + err);
-                });
-
-                writeStream.on('end', function () {
-                    console.log("Finished copying " + metadata.filename);
-                    this.fileInfo.deleteFileMetadata();
-                });
-
-                // do the copy
-                readStream.on('open', function (fd) {
-                    writeStream.on('open', function (fd) {
-                        readStream.pipe(writeStream);
-                    })
-                });
+                (function(src, dst, meta, app) {
+                    util.copyFile(currentFilePath, backupFilePath, function () {
+                        console.log("Done copying file " + meta.filename);
+                    });
+                })(currentFilePath, backupFilePath, keepFiles[i], this);
             }
         },
     };

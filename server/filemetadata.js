@@ -17,10 +17,17 @@ var createFileMetadata = function (init) {
         
         // Gets a partial path to the file which is the parent folder and filename
         // The partial path includes a file separator character at the beginning of the path
-        getPartialPath: function() {
+        getPartialPath: function(appendFileName) {
+            appendFileName = appendFileName === undefined ? true : appendFileName;
+            
             var parentIndex = this.path.lastIndexOf(pathModule.sep)
             var parent = this.path.substr(parentIndex);
-            return parent + pathModule.sep + this.filename;
+            if (appendFileName) {
+                return parent + pathModule.sep + this.filename;
+            }
+            else {
+                return parent;
+            }
         },
     }
 }
