@@ -1,0 +1,4 @@
+To get visual studio code integration, at command line do:
+
+git branch --set-upstream-to origin/master
+
