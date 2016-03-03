@@ -1,6 +1,6 @@
 // app.js
 // Creates a new application instance
-
+// Conflict
 var fileInfo = require('./fileinfo');
 var express = require('express');
 
