@@ -1,9 +1,10 @@
+// Module to create a new file info instance used to maintain the metadata for each file
+
 var fileMetadata = require('./filemetadata');
 var fs = require('fs');
 
 var createFileInfo = function (init) {
     init = init || {};
-
     
     // Private Data ////////////////////////////////////
     var dir = init.dir || '';
@@ -18,7 +19,7 @@ var createFileInfo = function (init) {
     
     // getNextFile(fileInfo)
     //
-    // Gets the next file for the given fileInfo object
+    // Gets the next available file from the file set.
     // returns true if getNextFile can be called again, false otherwise (i.e. is at the end of the file set)
     var getNextFile = function () {
         if (currFileIndex < dirFiles.length - 1) {
@@ -32,7 +33,7 @@ var createFileInfo = function (init) {
     
     // getPrevFile(fileInfo)
     //
-    // Gets the previous file for the given fileInfo object
+    // Gets the previous available file from the file set.
     // returns true if getPrevFile can be called again, false otherwise (i.e. is at the beginning of the file set)
     var getPrevFile = function () {
         if (currFileIndex > 0) {
@@ -79,7 +80,8 @@ var createFileInfo = function (init) {
     
     // isValidFile(fileInfo)
     //
-    // Determines if the next file is a valid file type
+    // Determines if the given file is a valid file type.  Uses the current file if
+    // filename is null or undefined.
     var isValidFile = function (filename) {
         filename = (filename || currFile) + "";
         return filename.match(validFileTypes) && metadata[filename];
@@ -118,6 +120,7 @@ var createFileInfo = function (init) {
             else {
                 // update the index
                 metadata[currFile].index = currFileIndex;
+                metadata[currFile].path = dir;
                 metadata[currFile].touch = true;
             }
         }
@@ -139,9 +142,10 @@ var createFileInfo = function (init) {
 
     // Return a new instance object
     return {
+        
         // getNextValidFile()
         //
-        // Gets the next valid file
+        // Gets the next valid file from the file set
         //
         // Returns: true if a valid file was found, false otherwise
         getNextValidFile: function () {
@@ -150,7 +154,7 @@ var createFileInfo = function (init) {
     
         // getPrevValidFile()
         //
-        // Gets the previous valid file
+        // Gets the previous valid file from the file set
         //
         // Returns: true if a valid file was found, false otherwise
         getPrevValidFile: function () {
@@ -165,10 +169,7 @@ var createFileInfo = function (init) {
                 var fileInfoString = fs.readFileSync(fileInfoFilename);
                 console.log("Loading existing file " + fileInfoFilename);
                 var fileInfoData = JSON.parse(fileInfoString)
-                fileInfoData.dir = dir;
-                var fragments = fileInfoData.validFileTypes.match(/\/(.*?)\/([gimy])?$/);
-                fileInfoData.validFileTypes = new RegExp(fragments[1], fragments[2] || '');
-                instance = createFileInfo(fileInfoData);
+                metadata = fileInfoData.metadata;
                 initializeMetadata();
             }
             catch (e) {
@@ -185,6 +186,10 @@ var createFileInfo = function (init) {
             }
         },
 
+        // isValidFile
+        //
+        // Determines if the given file is a valid file type.  Uses the current file if
+        // filename is null or undefined.
         isValidFile: function (filename) {
             return isValidFile(filename);
         },
@@ -230,6 +235,9 @@ var createFileInfo = function (init) {
             }
         },
 
+        // getFilePath
+        //
+        // Gets the path to the given file name so that it can be located on disk.
         getFilePath: function (filename) {
             var filedata = this.getFileMetadata(filename);
             return filedata.path + '\\' + filedata.filename;

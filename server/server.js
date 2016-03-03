@@ -8,7 +8,7 @@ var util = require('./util');
 // app configuration data
 var rootPath = '../client';
 var fileInfoFilename = './data/fileInfo.txt';
-var imageSrcDir = 'D:\\OneDrive\\Photos\\2011\\2012-01-04';
+var imageSrcDir = 'C:\\Users\\lockhart\\OneDrive\\Photos\\2011\\2012-01-04';
 var validFileTypes = /\.gif|\.jpg|\.jpeg/i;
 var serverPort = 8080;
 
