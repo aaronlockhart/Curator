@@ -137,7 +137,7 @@ var createFileInfo = function (init) {
         console.log(metadata);
     }
 
-    // Create a new instance object
+    // Return a new instance object
     return {
         // getNextValidFile()
         //
