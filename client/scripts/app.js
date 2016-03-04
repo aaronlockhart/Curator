@@ -1,3 +1,4 @@
+/* global Taggle */
 var app = (function () {
     $(document).ready(function () {
         var options = {
@@ -20,7 +21,7 @@ var app = (function () {
         });
     });
 
-    
+
     var fileMetadata = function (init) {
         init = init || {};
         var that = {};
@@ -28,9 +29,28 @@ var app = (function () {
         that.filename = init.filename || '';
         that.path = init.path || '';
         that.keep = init.keep || false;
+        that.tags = init.tags || [];
 
         return that;
     }
+
+    var clearingTags = false;
+    
+    // Setup image tagging
+    var taggle = new Taggle('tags', {
+        onTagAdd: function (event, tag) {
+            $.getJSON('/action?button=tag&ajax=true&tag=' + tag, function (data) {
+                console.log(data);
+            });
+        },
+        onTagRemove: function (event, tag) {
+            if (!clearingTags) {
+                $.getJSON('/action?button=untag&ajax=true&tag=' + tag, function (data) {
+                    console.log(data);
+                });
+            }
+        }
+    });
 
     var currentFileInfo = fileMetadata();
 
@@ -52,12 +72,16 @@ var app = (function () {
             $("#image").attr("class", "");
         }
 
+        for (i = 0; i < currentFileInfo.tags.length; i++) {
+            taggle.add(currentFileInfo.tags[i]);
+        }
         if (fetch) {
             $("#image").attr("src", "/file?filename=" + currentFileInfo.filename);
         }
     }
 
     function mySwipeLeftHandler(event) {
+        clearTags();
         console.log(event);
         $.getJSON('/action?button=next&ajax=true', function (data) {
             console.log(data);
@@ -66,6 +90,7 @@ var app = (function () {
     }
 
     function mySwipeRightHandler(event) {
+        clearTags();
         console.log(event);
         $.getJSON('/action?button=prev&ajax=true', function (data) {
             console.log(data);
@@ -74,6 +99,7 @@ var app = (function () {
     }
 
     function mySwipeUpHandler(event) {
+        clearTags();
         console.log(event);
         if (currentFileInfo.filename) {
             $.getJSON('/action?button=keep&ajax=true&filename=' + currentFileInfo.filename, function (data) {
@@ -84,7 +110,7 @@ var app = (function () {
     }
 
     function mySwipeDownHandler(event) {
-        console.log(event);
+        clearTags();
         if (currentFileInfo.filename) {
             $.getJSON('/action?button=unkeep&ajax=true&filename=' + currentFileInfo.filename, function (data) {
                 console.log(data);
@@ -92,4 +118,12 @@ var app = (function () {
             });
         }
     }
-}());
+
+    // Clears the tags with a flag set to true so we don't send a message to the server to remove the tags from metadata
+    function clearTags() {
+        clearingTags = true;
+        taggle.removeAll();
+        clearingTags = false;
+    }
+
+} ());
