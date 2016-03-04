@@ -1,4 +1,6 @@
 var fs = require('fs');
+var pathModule = require('path');
+var mkdirpModule = require('mkdirp');
 
 var contentTypes = {
     '.jpg': 'image/jpg',
@@ -14,7 +16,7 @@ var contentTypes = {
 // getQueryValueString(query, strNewline)
 //
 // Gets the values of the query string object as a single string
-module.exports.getQueryValueString = function(query, strNewline) {
+module.exports.getQueryValueString = function (query, strNewline) {
     strNewline = strNewline || '\n';
     var queryVals = '';
     for (var prop in query) {
@@ -27,7 +29,7 @@ module.exports.getQueryValueString = function(query, strNewline) {
 //
 // Retrieves the content type using the extension of the file
 // passed in the path parameter
-module.exports.getContentType = function(path) {
+module.exports.getContentType = function (path) {
     path = path || '';
     var i = path.lastIndexOf('.');
     if (i > -1) {
@@ -40,7 +42,7 @@ module.exports.getContentType = function(path) {
 // Serves a file to the response stream
 // res : the http.ServerResponse object
 // path : the path of the file to serve
-module.exports.serveFile = function(res, path) {
+module.exports.serveFile = function (res, path) {
     if (res && path) {
         fs.readFile(path, function (err, data) {
             if (err) {
@@ -75,7 +77,7 @@ module.exports.serveFile = function(res, path) {
 // res : the http.ServerResponse object
 // obj : the javascript object to return in the response as a JSON string
 // callback : an optional string containing the name of a callback function to wrap around the JSON object string
-module.exports.serveJavascriptObject = function(res, obj, callback) {
+module.exports.serveJavascriptObject = function (res, obj, callback) {
     if (callback) {
         res.writeHead(200, { 'Content-type': 'application/javascript' });
         res.end(callback + '(' + JSON.stringify(obj) + ');');
@@ -86,3 +88,43 @@ module.exports.serveJavascriptObject = function(res, obj, callback) {
     }
 }
 
+// copyFile(srcFilePath, dstFilePath)
+//
+// Copy a file from the srcFilePath to dstFilePath asynchronously
+module.exports.copyFile = function (srcFilePath, dstFilePath, onComplete) {
+    console.log('Copying ' + srcFilePath + ' to ' + dstFilePath);
+
+    var readStream = fs.createReadStream(srcFilePath);
+
+    readStream.on('error', function (err) {
+        console.log("Error on readstream: " + err);
+    });
+
+    // do the copy
+    readStream.on('open', function (fd) {
+        var dstDir = dstFilePath.substring(0, dstFilePath.lastIndexOf(pathModule.sep));
+        mkdirpModule(dstDir, function (err) {
+            if (err) {
+                console.log("Failed to mkdirp " + dstDir + " Error:" + err);
+            }
+            else {
+                var writeStream = fs.createWriteStream(dstFilePath);
+
+                writeStream.on('error', function (err) {
+                    console.log("Error on writestream: " + err);
+                });
+
+                writeStream.on('finish', onComplete);
+
+                writeStream.on('open', function (fd) {
+                    readStream.pipe(writeStream);
+                })
+            }
+        });
+    });
+}
+
+module.exports.deleteFile = function (deleteFilePath, onComplete) {
+    console.log("Attempting to delete file " + deleteFilePath);
+    fs.unlink(deleteFilePath, onComplete);
+}

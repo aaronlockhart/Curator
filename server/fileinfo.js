@@ -221,26 +221,37 @@ var createFileInfo = function (init) {
             return metadata[filename];
         },
     
-        // updateMetadata(filename, val)
+        // updateMetadata(filename, updateMeta)
         //
         // filename: the name of the metadata to update or if undefined/null the current file is used
-        // val: an object representing the properties of the metadata to update
-        updateFileMetadata: function (filename, val) {
+        // updateMeta: an object representing the properties of the metadata to update
+        updateFileMetadata: function (filename, updateMeta) {
             filename = filename || currFile;
-            var filedata = this.getFileMetadata(filename);
-            for (var key in val) {
-                if (filedata.hasOwnProperty(key)) {
-                    filedata[key] = val[key];
+            console.log("Updating metadata for " + filename);
+
+            var myMeta = this.getFileMetadata(filename);
+            if (myMeta) {
+                console.log("Found matching meta " + myMeta.filename);
+                
+                for (var key in updateMeta) {
+                    if (myMeta.hasOwnProperty(key)) {
+                        myMeta.updateProperty(key, updateMeta[key]);
+                    }
                 }
             }
         },
 
-        deleteFileMetadata: function (filedata) {
-            var matchingMeta = metadata[filedata.filename];
-            if (matchingMeta) {
-                console.log("Deleting metadata " + filedata.filename);
-                delete metadata[filedata.filename];
-                dirFiles.splice(filedata.index, 1);
+        // deleteFileMetadata(meta) {
+        // 
+        // Delete a metadata object from metadata and dirFiles.. not sure what side effects this has..
+        deleteFileMetadata: function (deleteMeta) {
+            if (deleteMeta) {
+                var matchingMeta = metadata[deleteMeta.filename];
+                if (matchingMeta) {
+                    console.log("Deleting metadata " + deleteMeta.filename);
+                    delete metadata[deleteMeta.filename];
+                    dirFiles.splice(deleteMeta.index, 1);
+                }
             }
         },
 
@@ -273,8 +284,8 @@ var createFileInfo = function (init) {
         //
         // Gets the path to the given file name so that it can be located on disk.
         getFilePath: function (filename) {
-            var filedata = this.getFileMetadata(filename);
-            return filedata.getPath();
+            var meta = this.getFileMetadata(filename);
+            return meta.getPath();
         },
         
         // getFilteredMetadata
@@ -284,9 +295,10 @@ var createFileInfo = function (init) {
             var result = [];
 
             for (var i = 0; i < dirFiles.length; i++) {
-                var filedata = this.getFileMetadata(dirFiles[i]);
-                if (filter(filedata)) {
-                    result.push(fileMetadata(filedata));
+                var meta = this.getFileMetadata(dirFiles[i]);
+                if (filter(meta)) {
+                    // pushes a copy
+                    result.push(fileMetadata(meta));
                 }
             }
 

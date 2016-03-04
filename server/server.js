@@ -24,6 +24,8 @@ var appInstance = app({
 });
 
 // Server routing
+
+// Static serve up the client folder which will handle all the html/js/css etc files
 appInstance.expressInstance.use('/', express.static(rootPath));
 
 // Handle client requests for a given file
@@ -79,6 +81,8 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
     else if (reqURL.query.button === 'keep') {
         var filename = reqURL.query.filename;
         appInstance.fileInfo.updateFileMetadata(filename, { keep: true });
+        appInstance.moveToBackupFolder(filename);
+        
         if (reqURL.query.ajax === 'true') {
             util.serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata(filename));
             return;
