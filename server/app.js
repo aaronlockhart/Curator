@@ -2,8 +2,6 @@
 var fileInfo = require('./fileinfo');
 var express = require('express');
 var fs = require('fs');
-var mkdirpModule = require('mkdirp');
-var pathModule = require('path');
 var util = require('./util');
 
 var createCuratorApp = function (init) {
