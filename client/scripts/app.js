@@ -11,6 +11,7 @@ var app = (function () {
         $("#image").hammer(options).bind("swiperight", mySwipeRightHandler);
         $("#image").hammer(options).bind("swipeup", mySwipeUpHandler);
         $("#image").hammer(options).bind("swipedown", mySwipeDownHandler);
+        $("#image").data("hammer").get('swipe').set({ velocity: 0.80 });
 
         getCurrentFileInfo(setCurrentFileInfo);
 
