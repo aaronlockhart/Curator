@@ -22,6 +22,8 @@ var createCuratorApp = function (init) {
     // The backup folder path
     var backupDir = ""
     
+    var currInfoIndex = 0;
+    
     // Private methods ////
     var setInitConfigOnFileInfo = function (info) {
         // copy in app initialization information
@@ -144,36 +146,87 @@ var createCuratorApp = function (init) {
             saveAllFileInfosSync();
         },
 
-        getFileMetadata: function (filename) {
-            return fileInfos[0].getFileMetadata(filename);
+        getFileInfoIndexFromId: function (fileid) {
+            if (fileid && fileid.indexOf(':') > 0) {
+                return fileid.split(':')[0];
+            }
         },
 
-        getFilePath: function (filename) {
+        getFilenameFromId: function (fileid) {
+            if (fileid && fileid.indexOf(':') > 0) {
+                return fileid.split(':')[1];
+            }
+        },
+
+        getFileMetadata: function (fileId) {
+            var index = this.getFileInfoIndexFromId(fileId);
+            var filename = this.getFilenameFromId(fileId);
+            var info = fileInfos[index] || fileInfos[0];
+
+            if (info) {
+                var meta = info.getFileMetadata(filename)
+                var fakeMeta = {
+                    filename: index + ':' + filename,
+                    keep: meta.keep,
+                    tags: meta.tags,
+                }
+                return fakeMeta;
+            }
+        },
+
+        getFilePath: function (fileId) {
+            var index = this.getFileInfoIndexFromId(fileId);
+            var filename = this.getFilenameFromId(fileId);
+            var info = fileInfos[index] || fileInfos[0];
             return fileInfos[0].getFilePath(filename);
         },
 
-        isValidFile: function (filename) {
-            return fileInfos[0].isValidFile(filename);
+        isValidFile: function (fileId) {
+            var index = this.getFileInfoIndexFromId(fileId);
+            var filename = this.getFilenameFromId(fileId);
+            var info = fileInfos[index] || fileInfos[0];
+
+            if (info) {
+                return info.isValidFile(filename);
+            }
         },
 
         getNextValidFile: function () {
-            return fileInfos[0].getNextValidFile();
+            return fileInfos[currInfoIndex].getNextValidFile();
         },
 
         getPrevValidFile: function () {
-            return fileInfos[0].getPrevValidFile();
+            return fileInfos[currInfoIndex].getPrevValidFile();
         },
 
-        updateFileMetadata: function (filename, updateMeta) {
-            return fileInfos[0].updateFileMetadata(filename, updateMeta);
+        updateFileMetadata: function (fileId, updateMeta) {
+            var index = this.getFileInfoIndexFromId(fileId);
+            var filename = this.getFilenameFromId(fileId);
+            var info = fileInfos[index] || fileInfos[0];
+
+            if (info) {
+                return info.updateFileMetadata(filename, updateMeta);
+            }
         },
 
-        addTag: function (filename, tag) {
-            return fileInfos[0].addTag(filename, tag);
+        addTag: function (fileId, tag) {
+            var index = this.getFileInfoIndexFromId(fileId);
+            var filename = this.getFilenameFromId(fileId);
+            var info = fileInfos[index] || fileInfos[0];
+
+            if (info) {
+                return info.addTag(filename, tag);
+            }
         },
 
-        removeTag: function (filename, tag) {
-            return fileInfos[0].removeTag(filename, tag);
+        removeTag: function (fileId, tag) {
+            var index = this.getFileInfoIndexFromId(fileId);
+            var filename = this.getFilenameFromId(fileId);
+            var info = fileInfos[index] || fileInfos[0];
+
+            if (info) {
+                return info.removeTag(filename, tag);
+            }
         },
     };
 
