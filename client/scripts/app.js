@@ -1,3 +1,4 @@
+/* global Taggle */
 var app = (function () {
     $(document).ready(function () {
         var options = {
@@ -20,7 +21,7 @@ var app = (function () {
         });
     });
 
-    
+
     var fileMetadata = function (init) {
         init = init || {};
         var that = {};
@@ -28,9 +29,20 @@ var app = (function () {
         that.filename = init.filename || '';
         that.path = init.path || '';
         that.keep = init.keep || false;
+        that.tags = init.tags || [];
 
         return that;
     }
+    
+    // Setup image tagging
+    var taggle = new Taggle('tags', {
+        onTagAdd: function (event, tag) {
+            $.getJSON('/action?button=tag&ajax=true&tag=' + tag, function (data) {
+                console.log(data);
+                setCurrentFileInfo(fileMetadata(data));
+            });
+        }
+    });
 
     var currentFileInfo = fileMetadata();
 
@@ -51,13 +63,17 @@ var app = (function () {
         else {
             $("#image").attr("class", "");
         }
-
+        
+        for (i = 0; i < currentFileInfo.tags.length; i++) {
+            taggle.add(currentFileInfo.tags[i]);
+        }
         if (fetch) {
             $("#image").attr("src", "/file?filename=" + currentFileInfo.filename);
         }
     }
 
     function mySwipeLeftHandler(event) {
+        taggle.removeAll();
         console.log(event);
         $.getJSON('/action?button=next&ajax=true', function (data) {
             console.log(data);
@@ -66,6 +82,7 @@ var app = (function () {
     }
 
     function mySwipeRightHandler(event) {
+        taggle.removeAll();
         console.log(event);
         $.getJSON('/action?button=prev&ajax=true', function (data) {
             console.log(data);
@@ -74,6 +91,7 @@ var app = (function () {
     }
 
     function mySwipeUpHandler(event) {
+        taggle.removeAll();
         console.log(event);
         if (currentFileInfo.filename) {
             $.getJSON('/action?button=keep&ajax=true&filename=' + currentFileInfo.filename, function (data) {
@@ -84,6 +102,7 @@ var app = (function () {
     }
 
     function mySwipeDownHandler(event) {
+        taggle.removeAll();
         console.log(event);
         if (currentFileInfo.filename) {
             $.getJSON('/action?button=unkeep&ajax=true&filename=' + currentFileInfo.filename, function (data) {
@@ -92,4 +111,5 @@ var app = (function () {
             });
         }
     }
-}());
+
+} ());

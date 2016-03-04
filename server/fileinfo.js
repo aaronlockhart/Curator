@@ -129,6 +129,7 @@ var createFileInfo = function (init) {
                     path: dir,
                     keep: false,
                     index: currFileIndex,
+                  //  tags: tags
                 })
 
                 metadata[currFile].touch = true;
@@ -233,13 +234,21 @@ var createFileInfo = function (init) {
                 }
             }
         },
-        
+
         deleteFileMetadata: function (filedata) {
             var matchingMeta = metadata[filedata.filename];
             if (matchingMeta) {
                 console.log("Deleting metadata " + filedata.filename);
                 delete metadata[filedata.filename];
                 dirFiles.splice(filedata.index, 1);
+            }
+        },
+
+        addTag: function (filename, tag) {
+            var filedata = this.getFileMetadata(filename);
+            if (filedata) {
+                console.log("Adding tag " + filedata.filename);
+                filedata.tags.push(tag);
             }
         },
 
@@ -273,14 +282,14 @@ var createFileInfo = function (init) {
         // Returns an array of filtered metadata
         getFilteredMetadata: function (filter) {
             var result = [];
-            
+
             for (var i = 0; i < dirFiles.length; i++) {
                 var filedata = this.getFileMetadata(dirFiles[i]);
                 if (filter(filedata)) {
                     result.push(fileMetadata(filedata));
                 }
             }
-            
+
             return result;
         },
     };
