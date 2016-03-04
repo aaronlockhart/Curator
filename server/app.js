@@ -32,7 +32,7 @@ var createCuratorApp = function (init) {
                 }
             }
         }
-        
+
         return info;
     }
 
@@ -52,13 +52,14 @@ var createCuratorApp = function (init) {
         
         // Bootstrap any source dirs that don't exist
         imageSrcDirs.forEach(function (srcDir) {
-            console.log("Bootstrapping " + srcDir);
-            
-            var match = fileInfos.find(function (fileInfo) {
-                return fileInfo.dir === srcDir;
-            })
+            var match = fileInfos.find(function (info) {
+                console.log("Testing " + info.getSrcDir() + " === " + srcDir);
+                return info.getSrcDir() === srcDir;
+            });
 
             if (!match) {
+                console.log("Bootstrapping " + srcDir);
+                
                 // push the source dir
                 fileInfos.push(fileInfo(setInitConfigOnFileInfo({
                     dir: srcDir,
@@ -142,35 +143,35 @@ var createCuratorApp = function (init) {
         saveAllFileInfosSync: function () {
             saveAllFileInfosSync();
         },
-        
+
         getFileMetadata: function (filename) {
             return fileInfos[0].getFileMetadata(filename);
         },
-        
+
         getFilePath: function (filename) {
             return fileInfos[0].getFilePath(filename);
         },
-        
+
         isValidFile: function (filename) {
             return fileInfos[0].isValidFile(filename);
         },
-        
+
         getNextValidFile: function () {
             return fileInfos[0].getNextValidFile();
         },
-        
+
         getPrevValidFile: function () {
             return fileInfos[0].getPrevValidFile();
         },
-        
+
         updateFileMetadata: function (filename, updateMeta) {
             return fileInfos[0].updateFileMetadata(filename, updateMeta);
         },
-        
+
         addTag: function (filename, tag) {
             return fileInfos[0].addTag(filename, tag);
         },
-        
+
         removeTag: function (filename, tag) {
             return fileInfos[0].removeTag(filename, tag);
         },

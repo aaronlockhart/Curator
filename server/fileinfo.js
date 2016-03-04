@@ -191,6 +191,10 @@ var createFileInfo = function (init) {
     
     // Return a new instance object
     return {
+        // Gets the base directory for this fileInfo object
+        getSrcDir: function() {
+            return dir;
+        },
         
         // getNextValidFile()
         //
