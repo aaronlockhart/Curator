@@ -108,6 +108,11 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
         var tag = reqURL.query.tag;
         appInstance.fileInfo.addTag(filename, tag);
     }
+     else if(reqURL.query.button === 'untag'){
+        var filename = reqURL.query.filename;
+        var tag = reqURL.query.tag;
+        appInstance.fileInfo.removeTag(filename, tag);
+    }
 
     // This will redirect back to the root path so that the form buttons will work
     res.redirect('/');

@@ -129,7 +129,6 @@ var createFileInfo = function (init) {
                     path: dir,
                     keep: false,
                     index: currFileIndex,
-                  //  tags: tags
                 })
 
                 metadata[currFile].touch = true;
@@ -232,7 +231,7 @@ var createFileInfo = function (init) {
             var myMeta = this.getFileMetadata(filename);
             if (myMeta) {
                 console.log("Found matching meta " + myMeta.filename);
-                
+
                 for (var key in updateMeta) {
                     if (myMeta.hasOwnProperty(key)) {
                         myMeta.updateProperty(key, updateMeta[key]);
@@ -254,15 +253,7 @@ var createFileInfo = function (init) {
                 }
             }
         },
-
-        addTag: function (filename, tag) {
-            var filedata = this.getFileMetadata(filename);
-            if (filedata) {
-                console.log("Adding tag " + filedata.filename);
-                filedata.tags.push(tag);
-            }
-        },
-
+        
         // saveFileInfo(sync)
         // 
         // Saves the file info to a specified location
@@ -277,6 +268,35 @@ var createFileInfo = function (init) {
                     if (err) throw err;
                     console.log('Saved fileinfo');
                 })
+            }
+        },
+
+        // addTag(filename, tag)
+        // 
+        // Adds a tag to the file's metadata
+        addTag: function (filename, tag) {
+            var filedata = this.getFileMetadata(filename);
+            if (filedata) {
+                var index = filedata.tags.indexOf(tag);
+                // Only add if it doesn't exist already
+                if (index == -1) {
+                    console.log("Adding tag " + tag + " for file " + filedata.filename);
+                    filedata.tags.push(tag);
+                }
+            }
+        },
+        
+        // removeTag(filename, tag)
+        // 
+        // Removes a tag from the file's metadata
+        removeTag: function (filename, tag) {
+            var filedata = this.getFileMetadata(filename);
+            if (filedata) {
+                var index = filedata.tags.indexOf(tag);
+                if (index > -1) {
+                    console.log("Removing tag " + tag + " for file " + filedata.filename);
+                    filedata.tags.splice(index, 1);
+                }
             }
         },
 

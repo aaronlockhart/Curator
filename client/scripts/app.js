@@ -33,14 +33,22 @@ var app = (function () {
 
         return that;
     }
+
+    var clearingTags = false;
     
     // Setup image tagging
     var taggle = new Taggle('tags', {
         onTagAdd: function (event, tag) {
             $.getJSON('/action?button=tag&ajax=true&tag=' + tag, function (data) {
                 console.log(data);
-                setCurrentFileInfo(fileMetadata(data));
             });
+        },
+        onTagRemove: function (event, tag) {
+            if (!clearingTags) {
+                $.getJSON('/action?button=untag&ajax=true&tag=' + tag, function (data) {
+                    console.log(data);
+                });
+            }
         }
     });
 
@@ -63,7 +71,7 @@ var app = (function () {
         else {
             $("#image").attr("class", "");
         }
-        
+
         for (i = 0; i < currentFileInfo.tags.length; i++) {
             taggle.add(currentFileInfo.tags[i]);
         }
@@ -73,7 +81,7 @@ var app = (function () {
     }
 
     function mySwipeLeftHandler(event) {
-        taggle.removeAll();
+        clearTags();
         console.log(event);
         $.getJSON('/action?button=next&ajax=true', function (data) {
             console.log(data);
@@ -82,7 +90,7 @@ var app = (function () {
     }
 
     function mySwipeRightHandler(event) {
-        taggle.removeAll();
+        clearTags();
         console.log(event);
         $.getJSON('/action?button=prev&ajax=true', function (data) {
             console.log(data);
@@ -91,7 +99,7 @@ var app = (function () {
     }
 
     function mySwipeUpHandler(event) {
-        taggle.removeAll();
+        clearTags();
         console.log(event);
         if (currentFileInfo.filename) {
             $.getJSON('/action?button=keep&ajax=true&filename=' + currentFileInfo.filename, function (data) {
@@ -102,14 +110,20 @@ var app = (function () {
     }
 
     function mySwipeDownHandler(event) {
-        taggle.removeAll();
-        console.log(event);
+        clearTags();
         if (currentFileInfo.filename) {
             $.getJSON('/action?button=unkeep&ajax=true&filename=' + currentFileInfo.filename, function (data) {
                 console.log(data);
                 setCurrentFileInfo(fileMetadata(data), false);
             });
         }
+    }
+
+    // Clears the tags with a flag set to true so we don't send a message to the server to remove the tags from metadata
+    function clearTags() {
+        clearingTags = true;
+        taggle.removeAll();
+        clearingTags = false;
     }
 
 } ());
