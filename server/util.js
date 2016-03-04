@@ -128,3 +128,41 @@ module.exports.deleteFile = function (deleteFilePath, onComplete) {
     console.log("Attempting to delete file " + deleteFilePath);
     fs.unlink(deleteFilePath, onComplete);
 }
+
+module.exports.getDirsSync = function (path, recurse) {
+    var dirInfo = fs.readdirSync(path);
+    var result = [];
+
+    dirInfo.map(function (file) {
+        return pathModule.join(path, file);
+    }).filter(function (file) {
+        return !fs.statSync(file).isFile();
+    }).forEach(function (file) {
+        result.push(file);
+    })
+
+    if (recurse) {
+        var subdirs = [];
+        result.forEach(function (path) {
+            subdirs.concat(module.exports.getDirsSync(path));
+        })
+        result.concat(subdirs);
+    }
+
+    return result;
+}
+
+module.exports.getFilesInDirSync = function (path) {
+    var dirInfo = fs.readdirSync(path);
+    var result = [];
+
+    dirInfo.map(function (file) {
+        return pathModule.join(path, file);
+    }).filter(function (file) {
+        return fs.statSync(file).isFile();
+    }).forEach(function (file) {
+        result.push(file);
+    })
+    
+    return result;
+}

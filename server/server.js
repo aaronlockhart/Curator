@@ -7,19 +7,15 @@ var util = require('./util');
 
 // app configuration data
 var rootPath = '../client';
-var fileInfoFilename = './data/fileInfo.txt';
 var validFileTypes = /\.gif|\.jpg|\.jpeg/i;
 var serverPort = 8080;
-var backupDir = ['D:\\OneDrive\\Photos'];
 
 RegExp.prototype.toJSON = RegExp.prototype.toString;
 
 // App initialization and server startup.
 var appInstance = app({
-    backupDir: backupDir,
     fileInfo: {
         validFileTypes: validFileTypes,
-        fileInfoFilename: fileInfoFilename,
     }
 });
 
@@ -37,11 +33,11 @@ appInstance.expressInstance.get('/file', function (req, res) {
     var filename = reqURL.query.filename;
             
     // Serve the current image
-    if (!appInstance.fileInfo.isValidFile(filename)) {
+    if (!appInstance.isValidFile(filename)) {
         res.end();
     }
     else {
-        util.serveFile(res, appInstance.fileInfo.getFilePath(filename));
+        util.serveFile(res, appInstance.getFilePath(filename));
     }
 });
 
@@ -51,7 +47,7 @@ appInstance.expressInstance.get('/currentFileInfo', function (req, res) {
     console.log("Received query: " + req.url + '\n');
     console.log(util.getQueryValueString(reqURL.query));
 
-    util.serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata());
+    util.serveJavascriptObject(res, appInstance.getFileMetadata());
 });
 
 
@@ -63,37 +59,37 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
 
     // get the previous file from the set
     if (reqURL.query.button === 'prev') {
-        appInstance.fileInfo.getPrevValidFile();
+        appInstance.getPrevValidFile();
         if (reqURL.query.ajax === 'true') {
-            util.serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata());
+            util.serveJavascriptObject(res, appInstance.getFileMetadata());
             return;
         }
     }
     // get the next file from the set
     else if (reqURL.query.button === 'next') {
-        appInstance.fileInfo.getNextValidFile();
+        appInstance.getNextValidFile();
         if (reqURL.query.ajax === 'true') {
-            util.serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata());
+            util.serveJavascriptObject(res, appInstance.getFileMetadata());
             return;
         }
     }
     // mark a file for backup
     else if (reqURL.query.button === 'keep') {
         var filename = reqURL.query.filename;
-        appInstance.fileInfo.updateFileMetadata(filename, { keep: true });
+        appInstance.updateFileMetadata(filename, { keep: true });
         appInstance.moveToBackupFolder(filename);
         
         if (reqURL.query.ajax === 'true') {
-            util.serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata(filename));
+            util.serveJavascriptObject(res, appInstance.getFileMetadata(filename));
             return;
         }
     }
     // unmark the file for backup
     else if (reqURL.query.button === 'unkeep') {
         var filename = reqURL.query.filename;
-        appInstance.fileInfo.updateFileMetadata(filename, { keep: false });
+        appInstance.updateFileMetadata(filename, { keep: false });
         if (reqURL.query.ajax === 'true') {
-            util.serveJavascriptObject(res, appInstance.fileInfo.getFileMetadata(filename));
+            util.serveJavascriptObject(res, appInstance.getFileMetadata(filename));
             return;
         }
     }
@@ -121,5 +117,5 @@ process.on('SIGINT', function () {
 
 process.on('exit', function () {
     console.log("Exiting..");
-    appInstance.fileInfo.saveFileInfo(true);
+    appInstance.saveAllFileInfosSync();
 });

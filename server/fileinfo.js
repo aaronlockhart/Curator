@@ -2,6 +2,22 @@
 
 var fileMetadata = require('./filemetadata');
 var fs = require('fs');
+var pathModule = require('path');
+
+var nextFileId = -1;
+
+// getNextFileId
+//
+// Gets the next valid file id
+var getNextFileId = function () {
+    return ++nextFileId;
+}
+
+var fastForwardToId = function (id) {
+    while (id > nextFileId) {
+        getNextFileId();
+    }
+}
 
 var createFileInfo = function (init) {
     init = init || {};
@@ -22,13 +38,30 @@ var createFileInfo = function (init) {
     // A regular expression containing the types of file extensions that are considered valid for display (i.e .jpg, .gif)
     var validFileTypes = init.validFileTypes || /\.*/i;
     
-    // Path to where metadata should be stored
-    var fileInfoFilename = init.fileInfoFilename || './fileInfo.txt';
+    // The base filename for file info
+    var filename = init.filename || 'fileInfo';
+    
+    // The file info extension
+    var ext = init.ext || '.txt';
+    
+    // The path to where file info is stored
+    var path = init.path || './data';
     
     // The index into dirFiles of the current file
     var currFileIndex = -1;
+
+    // A unique identifier for this file info
+    if (init.identifier) {
+        fastForwardToId(init.identifier);
+    }
+    
+    var identifier = init.identifier || getNextFileId();
     
     // Private Methods /////////////////////////////////
+    
+    var getPath = function () {
+        return path + pathModule.sep + filename + "_" + identifier + ext;
+    }
     
     // getNextFile(fileInfo)
     //
@@ -155,7 +188,7 @@ var createFileInfo = function (init) {
         console.log("Metadata initialized");
         console.log(metadata);
     }
-
+    
     // Return a new instance object
     return {
         
@@ -181,15 +214,13 @@ var createFileInfo = function (init) {
         // 
         // Retrieves a list of files and sets the next valid file
         initialize: function () {
+            var path = getPath();
+            
             try {
-                var fileInfoString = fs.readFileSync(fileInfoFilename);
-                console.log("Loading existing file " + fileInfoFilename);
-                var fileInfoData = JSON.parse(fileInfoString)
-                metadata = fileInfoData.metadata;
                 initializeMetadata();
             }
             catch (e) {
-                console.log("Existing file " + fileInfoFilename + " not found, initializing meta data for " + dir);
+                console.log("Existing file " + path + " not found, initializing meta data for " + dir);
                 initializeMetadata();
             }
         
@@ -231,7 +262,7 @@ var createFileInfo = function (init) {
             var myMeta = this.getFileMetadata(filename);
             if (myMeta) {
                 console.log("Found matching meta " + myMeta.filename);
-                
+
                 for (var key in updateMeta) {
                     if (myMeta.hasOwnProperty(key)) {
                         myMeta.updateProperty(key, updateMeta[key]);
@@ -259,12 +290,18 @@ var createFileInfo = function (init) {
         // Saves the file info to a specified location
         // sync: whether to the file is written synchronously (true) or not (false)
         saveFileInfo: function (sync) {
-            var content = JSON.stringify({ "metadata": metadata });
+            var content = JSON.stringify({ 
+                "dir": dir,
+                "identifier": identifier,
+                "metadata": metadata,
+            });
+            
+            var path = getPath();
             if (sync) {
-                fs.writeFileSync(fileInfoFilename, content);
+                fs.writeFileSync(path, content);
             }
             else {
-                fs.writeFile(fileInfoFilename, content, function (err) {
+                fs.writeFile(path, content, function (err) {
                     if (err) throw err;
                     console.log('Saved fileinfo');
                 })
