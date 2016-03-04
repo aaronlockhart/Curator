@@ -166,6 +166,14 @@ var createCuratorApp = function (init) {
         updateFileMetadata: function (filename, updateMeta) {
             return fileInfos[0].updateFileMetadata(filename, updateMeta);
         },
+        
+        addTag: function (filename, tag) {
+            return fileInfos[0].addTag(filename, tag);
+        },
+        
+        removeTag: function (filename, tag) {
+            return fileInfos[0].removeTag(filename, tag);
+        },
     };
 
     // Initialize the application instance

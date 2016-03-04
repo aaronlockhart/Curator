@@ -78,7 +78,7 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
         var filename = reqURL.query.filename;
         appInstance.updateFileMetadata(filename, { keep: true });
         appInstance.moveToBackupFolder(filename);
-        
+
         if (reqURL.query.ajax === 'true') {
             util.serveJavascriptObject(res, appInstance.getFileMetadata(filename));
             return;
@@ -99,15 +99,15 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
             return;
         }
     }
-    else if(reqURL.query.button === 'tag'){
+    else if (reqURL.query.button === 'tag') {
         var filename = reqURL.query.filename;
         var tag = reqURL.query.tag;
-        appInstance.fileInfo.addTag(filename, tag);
+        appInstance.addTag(filename, tag);
     }
-     else if(reqURL.query.button === 'untag'){
+    else if (reqURL.query.button === 'untag') {
         var filename = reqURL.query.filename;
         var tag = reqURL.query.tag;
-        appInstance.fileInfo.removeTag(filename, tag);
+        appInstance.removeTag(filename, tag);
     }
 
     // This will redirect back to the root path so that the form buttons will work
