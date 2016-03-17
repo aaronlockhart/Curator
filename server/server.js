@@ -46,10 +46,12 @@ appInstance.expressInstance.get('/currentFileInfo', function (req, res) {
     var reqURL = url.parse(req.url, true);
     console.log("Received query: " + req.url + '\n');
     console.log(util.getQueryValueString(reqURL.query));
-
-    util.serveJavascriptObject(res, appInstance.getFileMetadata());
+    
+    // get the meta of the current file
+    var meta = appInstance.getFileMetadata();
+    console.log("Returning metadata " + JSON.stringify(meta));
+    util.serveJavascriptObject(res, meta);
 });
-
 
 // Actions (client requests to do something..)
 appInstance.expressInstance.get('/action', function (req, res, next) {
@@ -93,17 +95,20 @@ appInstance.expressInstance.get('/action', function (req, res, next) {
             return;
         }
     }
+    // move all the files marked for backup to the backup directory
     else if (reqURL.query.button === 'move') {
         appInstance.moveFilesToBackupFolder();
         if (reqURL.query.ajax === 'true') {
             return;
         }
     }
+    // tag a picutre
     else if (reqURL.query.button === 'tag') {
         var filename = reqURL.query.filename;
         var tag = reqURL.query.tag;
         appInstance.addTag(filename, tag);
     }
+    // untag a picture
     else if (reqURL.query.button === 'untag') {
         var filename = reqURL.query.filename;
         var tag = reqURL.query.tag;

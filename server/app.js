@@ -21,7 +21,7 @@ var createCuratorApp = function (init) {
     
     // The backup folder path
     var backupDir = ""
-    
+
     var currInfoIndex = 0;
     
     // Private methods ////
@@ -54,10 +54,15 @@ var createCuratorApp = function (init) {
         
         // Bootstrap any source dirs that don't exist
         imageSrcDirs.forEach(function (srcDir) {
-            var match = fileInfos.find(function (info) {
+            var match = false;
+            for (var i = 0; i < fileInfos.length; i++) {
+                var info = fileInfos[i];
                 console.log("Testing " + info.getSrcDir() + " === " + srcDir);
-                return info.getSrcDir() === srcDir;
-            });
+                if (info.getSrcDir() === srcDir) {
+                    match = true;
+                    break;
+                }
+            }
 
             if (!match) {
                 console.log("Bootstrapping " + srcDir);
@@ -69,9 +74,9 @@ var createCuratorApp = function (init) {
                 
                 // push any sub dirs
                 var dirs = util.getDirsSync(srcDir, true);
-                dirs.forEach(function (dir) {
+                dirs.forEach(function (subDir) {
                     fileInfos.push(fileInfo(setInitConfigOnFileInfo({
-                        dir: srcDir,
+                        dir: subDir,
                     })));
                 });
             }
@@ -84,7 +89,11 @@ var createCuratorApp = function (init) {
         loadFileInfosSync();
 
         for (var i = 0; i < fileInfos.length; i++) {
-            fileInfos[i].initialize()
+            if (!fileInfos[i].initialize()) {
+                var path = fileInfos[i].getPath();
+                util.deleteFile(path);
+                fileInfos.splice(i, 1);
+            }
         }
     }
 
@@ -117,28 +126,32 @@ var createCuratorApp = function (init) {
         expressInstance: express(),
 
         // Moves the files marked for backup to the backup folder.
-        moveFilesToBackupFolder: function (files) {
-            var keepFiles = files || fileInfos[0].getFilteredMetadata(function (data) { return data.keep == true; });
+        // meta - an array of metadata to move
+        moveFilesToBackupFolder: function (fileIds) {
+            for (var i = 0; i < fileIds.length; i++) {
+                var index = this.getFileInfoIndexFromId(fileIds[i]);
+                var filename = this.getFilenameFromId(fileIds[i]);
+                var info = fileInfos[index];
 
-            for (var i = 0; i < keepFiles.length; i++) {
-                var currentFilePath = keepFiles[i].getPath();
-                var backupFilePath = backupDir + keepFiles[i].getPartialPath();
+                if (info && filename) {
+                    var keepFileMeta = info.getFileMetadata(filename);
+                    var currentFilePath = keepFileMeta.getPath();
+                    var backupFilePath = backupDir + keepFileMeta.getPartialPath();
 
-                (function (source, dest, meta, app) {
-                    util.copyFile(source, dest, function () {
-                        console.log("Done copying file " + dest);
-                        meta.backedUp = true;
-                        meta.backupPath = dest;
-                        app.updateFileMetadata(meta.filename, meta);
-                    });
-                })(currentFilePath, backupFilePath, keepFiles[i], this);
+                    (function (source, dest, meta, app) {
+                        util.copyFile(source, dest, function () {
+                            console.log("Done copying file " + dest);
+                            meta.backedUp = true;
+                            meta.backupPath = dest;
+                            app.updateFileMetadata(meta.filename, meta);
+                        });
+                    })(currentFilePath, backupFilePath, keepFileMeta, this);
+                }
             }
         },
 
-        moveToBackupFolder: function (filename) {
-            if (filename) {
-                this.moveFilesToBackupFolder([fileInfos[0].getFileMetadata(filename)]);
-            }
+        moveToBackupFolder: function (fileId) {
+            this.moveFilesToBackupFolder([fileId]);
         },
         
         // Saves all the file infos synchronously
@@ -146,27 +159,27 @@ var createCuratorApp = function (init) {
             saveAllFileInfosSync();
         },
 
-        getFileInfoIndexFromId: function (fileid) {
-            if (fileid && fileid.indexOf(':') > 0) {
-                return fileid.split(':')[0];
+        getFileInfoIndexFromId: function (fileId) {
+            if (fileId && fileId.indexOf(':') > 0) {
+                return fileId.split(':')[0];
             }
         },
 
-        getFilenameFromId: function (fileid) {
-            if (fileid && fileid.indexOf(':') > 0) {
-                return fileid.split(':')[1];
+        getFilenameFromId: function (fileId) {
+            if (fileId && fileId.indexOf(':') > 0) {
+                return fileId.split(':')[1];
             }
         },
 
         getFileMetadata: function (fileId) {
-            var index = this.getFileInfoIndexFromId(fileId);
+            var index = this.getFileInfoIndexFromId(fileId) || currInfoIndex;
             var filename = this.getFilenameFromId(fileId);
-            var info = fileInfos[index] || fileInfos[0];
+            var info = fileInfos[index] || fileInfos[currInfoIndex];
 
             if (info) {
                 var meta = info.getFileMetadata(filename)
                 var fakeMeta = {
-                    filename: index + ':' + filename,
+                    filename: index + ':' + meta.filename,
                     keep: meta.keep,
                     tags: meta.tags,
                 }
@@ -178,7 +191,10 @@ var createCuratorApp = function (init) {
             var index = this.getFileInfoIndexFromId(fileId);
             var filename = this.getFilenameFromId(fileId);
             var info = fileInfos[index] || fileInfos[0];
-            return fileInfos[0].getFilePath(filename);
+
+            if (info) {
+                return info.getFilePath(filename);
+            }
         },
 
         isValidFile: function (fileId) {
@@ -192,11 +208,41 @@ var createCuratorApp = function (init) {
         },
 
         getNextValidFile: function () {
-            return fileInfos[currInfoIndex].getNextValidFile();
+            var hasNextValidFile = false;
+            var info = fileInfos[currInfoIndex];
+
+            if (info) {
+                hasNextValidFile = info.getNextValidFile();
+            }
+
+            while (!hasNextValidFile && currInfoIndex + 1 < fileInfos.length) {
+                console.log("Moving to next file info");
+                currInfoIndex = currInfoIndex + 1;
+                hasNextValidFile = fileInfos[currInfoIndex].getNextValidFile();
+            }
+
+            if (!hasNextValidFile) {
+                console.log("No next info could be found");
+            }
         },
 
         getPrevValidFile: function () {
-            return fileInfos[currInfoIndex].getPrevValidFile();
+            var hasPrevValidFile = false;
+            var info = fileInfos[currInfoIndex];
+
+            if (info) {
+                hasPrevValidFile = info.getPrevValidFile();
+            }
+
+            while (!hasPrevValidFile && currInfoIndex - 1 > -1) {
+                console.log("Moving to previous file info");
+                currInfoIndex = currInfoIndex - 1;
+                hasPrevValidFile = fileInfos[currInfoIndex].getPrevValidFile();
+            }
+
+            if (!hasPrevValidFile) {
+                console.log("No prev info could be found");
+            }
         },
 
         updateFileMetadata: function (fileId, updateMeta) {
