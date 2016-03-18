@@ -178,6 +178,7 @@ var createCuratorApp = function (init) {
             var info = fileInfos[index] || fileInfos[currInfoIndex];
 
             if (info) {
+                console.log("Getting metadata for " + filename + " from info " + currInfoIndex);
                 var meta = info.getFileMetadata(filename)
                 var fakeMeta = {
                     filename: index + ':' + meta.filename,
@@ -191,7 +192,7 @@ var createCuratorApp = function (init) {
         getFilePath: function (fileId) {
             var index = this.getFileInfoIndexFromId(fileId);
             var filename = this.getFilenameFromId(fileId);
-            var info = fileInfos[index] || fileInfos[0];
+            var info = fileInfos[index];
 
             if (info) {
                 return info.getFilePath(filename);
@@ -201,7 +202,7 @@ var createCuratorApp = function (init) {
         isValidFile: function (fileId) {
             var index = this.getFileInfoIndexFromId(fileId);
             var filename = this.getFilenameFromId(fileId);
-            var info = fileInfos[index] || fileInfos[0];
+            var info = fileInfos[index];
 
             if (info) {
                 return info.isValidFile(filename);
@@ -261,7 +262,7 @@ var createCuratorApp = function (init) {
         updateFileMetadata: function (fileId, updateMeta) {
             var index = this.getFileInfoIndexFromId(fileId);
             var filename = this.getFilenameFromId(fileId);
-            var info = fileInfos[index] || fileInfos[0];
+            var info = fileInfos[index];
 
             if (info) {
                 return info.updateFileMetadata(filename, updateMeta);
@@ -271,7 +272,7 @@ var createCuratorApp = function (init) {
         addTag: function (fileId, tag) {
             var index = this.getFileInfoIndexFromId(fileId);
             var filename = this.getFilenameFromId(fileId);
-            var info = fileInfos[index] || fileInfos[0];
+            var info = fileInfos[index];
 
             if (info) {
                 return info.addTag(filename, tag);
@@ -281,7 +282,7 @@ var createCuratorApp = function (init) {
         removeTag: function (fileId, tag) {
             var index = this.getFileInfoIndexFromId(fileId);
             var filename = this.getFilenameFromId(fileId);
-            var info = fileInfos[index] || fileInfos[0];
+            var info = fileInfos[index];
 
             if (info) {
                 return info.removeTag(filename, tag);

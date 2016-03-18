@@ -169,7 +169,7 @@ function FileInfo(init) {
     * Initializes the file meta data, deleting old metadata of non-existant files and reindexing to the current directory
     */
     var initializeMetadata = function() {
-        console.log("Initializing metadata");
+        console.log("Initializing metadata for directory: " + dir);
 
         for (var key in metadata) {
             if (metadata.hasOwnProperty(key)) {
@@ -291,6 +291,7 @@ function FileInfo(init) {
         */
         getFileMetadata: function(filename) {
             filename = filename || currFile;
+            console.log("Getting metadata for " + filename);
             return metadata[filename];
         },
 

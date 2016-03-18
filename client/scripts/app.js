@@ -39,13 +39,13 @@ var app = (function () {
     // Setup image tagging
     var taggle = new Taggle('tags', {
         onTagAdd: function (event, tag) {
-            $.getJSON('/action?button=tag&ajax=true&tag=' + tag, function (data) {
+            $.getJSON('/action?button=tag&filename=' + currentFileInfo.filename + '&ajax=true&tag=' + tag, function (data) {
                 console.log(data);
             });
         },
         onTagRemove: function (event, tag) {
             if (!clearingTags) {
-                $.getJSON('/action?button=untag&ajax=true&tag=' + tag, function (data) {
+                $.getJSON('/action?button=untag&filename=' + currentFileInfo.filename + 'ajax=true&tag=' + tag, function (data) {
                     console.log(data);
                 });
             }
