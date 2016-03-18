@@ -130,6 +130,7 @@ module.exports.deleteFile = function (deleteFilePath, onComplete) {
 }
 
 module.exports.getDirsSync = function (path, recurse) {
+    console.log("Getting dirs for " + path)
     var dirInfo = fs.readdirSync(path);
     var result = [];
 
@@ -143,10 +144,10 @@ module.exports.getDirsSync = function (path, recurse) {
 
     if (recurse) {
         var subdirs = [];
-        result.forEach(function (path) {
-            subdirs.concat(module.exports.getDirsSync(path));
+        result.forEach(function (subdir) {
+            subdirs = subdirs.concat(module.exports.getDirsSync(subdir, recurse));
         })
-        result.concat(subdirs);
+        result = result.concat(subdirs);
     }
 
     return result;

@@ -74,6 +74,7 @@ var createCuratorApp = function (init) {
                 
                 // push any sub dirs
                 var dirs = util.getDirsSync(srcDir, true);
+                console.log("Got dirs " + dirs);
                 dirs.forEach(function (subDir) {
                     fileInfos.push(fileInfo(setInitConfigOnFileInfo({
                         dir: subDir,
@@ -218,7 +219,13 @@ var createCuratorApp = function (init) {
             while (!hasNextValidFile && currInfoIndex + 1 < fileInfos.length) {
                 console.log("Moving to next file info");
                 currInfoIndex = currInfoIndex + 1;
-                hasNextValidFile = fileInfos[currInfoIndex].getNextValidFile();
+                
+                if (!fileInfos[currInfoIndex].isValidFile()) {
+                    hasNextValidFile = fileInfos[currInfoIndex].getNextValidFile();
+                }
+                else {
+                    hasNextValidFile = true;
+                }
             }
 
             if (!hasNextValidFile) {
@@ -237,7 +244,13 @@ var createCuratorApp = function (init) {
             while (!hasPrevValidFile && currInfoIndex - 1 > -1) {
                 console.log("Moving to previous file info");
                 currInfoIndex = currInfoIndex - 1;
-                hasPrevValidFile = fileInfos[currInfoIndex].getPrevValidFile();
+                
+                if (!fileInfos[currInfoIndex].isValidFile()) {
+                    hasPrevValidFile = fileInfos[currInfoIndex].getPrevValidFile();
+                }
+                else {
+                    hasPrevValidFile = true;
+                }
             }
 
             if (!hasPrevValidFile) {

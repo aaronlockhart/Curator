@@ -92,8 +92,7 @@ function FileInfo(init) {
     /**
      * Private Methods
      */
-
-
+    
     /**
     * Gets the next available file from the file set.
     * returns true if getNextFile can be called again, false otherwise (i.e. is at the end of the file set)
@@ -131,28 +130,28 @@ function FileInfo(init) {
     *
     * @param {string} currFunc : the index into funcArr which indicates the function being called
     *
-    * returns : true if a valid file was found with the first function, false otherwise
+    * returns : true if getValidFile can be called again, false if it is at the end of the file set
     */
     var getValidFile = function(funcArr, currFunc) {
         currFunc = currFunc || 0;
-        var foundWithFirst = false;
+        var foundValidFileWithFirstFunc = false;
 
         if (currFunc < funcArr.length) {
             // use the current method until it returns false or a valid file
             // type is returned
             do {
                 var res = funcArr[currFunc]();
-                foundWithFirst = isValidFile();
+                foundValidFileWithFirstFunc = isValidFile();
             }
-            while (res && !foundWithFirst);
+            while (res && !foundValidFileWithFirstFunc);
 
-            if (!foundWithFirst) {
+            if (!foundValidFileWithFirstFunc) {
                 // call the next function to try and find a file
                 getValidFile(funcArr, ++currFunc);
             }
         }
 
-        return foundWithFirst;
+        return res;
     }
 
     /**
