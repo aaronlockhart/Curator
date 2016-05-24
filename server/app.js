@@ -8,18 +8,30 @@ var createCuratorApp = function (init) {
     init = init || {};
     
     // Private data ////
+    
+    /**
+     * The directory to store the fileInfo files in
+     */
     var fileInfosDir = "";
     
-    // fileInfos is an array of all the file info objects (one for every folder)
+    /**
+     * fileInfos is an array of all the file info objects (one for every folder)
+     */ 
     var fileInfos = [];
     
-    // Configuration settings
+    /**
+     * Configuration settings for the application
+     */ 
     var configData = {};
     
-    // The paths to where images can be located
+    /**
+     * The paths to where images can be located
+     */
     var imageSrcDirs = [];
     
-    // The backup folder path
+    /**
+     *  The backup folder path
+     */
     var backupDir = ""
 
     var currInfoIndex = 0;

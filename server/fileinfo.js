@@ -1,5 +1,8 @@
 /** 
- * Module to create a new file info instance used to maintain the metadata for each file
+ * Module to create a new FileInfo instance.
+ * 
+ * A FileInfo object manages the metadata for each file in a single folder and contains an index to the
+ * next file to serve in that folder.
  */
 var fileMetadata = require('./filemetadata');
 var fs = require('fs');
