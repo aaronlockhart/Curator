@@ -20,5 +20,8 @@
   "dependencies": {
     "express": "^4.13.4",
     "mkdirp": "0.5.1"
-  }
+  },
+  "engines": {
+    "node": ">=6.2.0"
+  } 
 }
