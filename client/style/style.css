@@ -7,3 +7,26 @@
 {
     height: 50;
 }
+
+.top_bar
+{
+    height: 50;
+    background-color: lightgray;
+}
+
+.content_item
+{
+    float: left;
+}
+
+.side_bar
+{
+    background-color: lightgray;
+    width: 50;
+    height: 100%;
+}
+
+.bottom_bar
+{
+    clear: both;
+}
