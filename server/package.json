@@ -19,7 +19,8 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.13.4",
-    "mkdirp": "0.5.1"
+    "mkdirp": "0.5.1",
+	"opencv": "https://github.com/bonestormiii/node-opencv"
   },
   "engines": {
     "node": ">=6.2.0"
