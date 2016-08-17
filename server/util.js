@@ -13,9 +13,11 @@ var contentTypes = {
 
 // Helper functions ///////////////////////////////////////////
  
-// getQueryValueString(query, strNewline)
-//
-// Gets the values of the query string object as a single string
+/**
+ * Gets the values of the query string object as a single string
+ * @param {string} query : The query string
+ * @param {string} strNewline : The character to use for newlines
+ */
 module.exports.getQueryValueString = function (query, strNewline) {
     strNewline = strNewline || '\n';
     var queryVals = '';
@@ -25,10 +27,11 @@ module.exports.getQueryValueString = function (query, strNewline) {
     return queryVals;
 }
 
-// getContentType(path)
-//
-// Retrieves the content type using the extension of the file
-// passed in the path parameter
+/**
+ * Retrieves the content type using the extension of the file
+ * passed in the path parameter
+ * @param {string} path : The full path name
+ */
 module.exports.getContentType = function (path) {
     path = path || '';
     var i = path.lastIndexOf('.');
@@ -37,11 +40,11 @@ module.exports.getContentType = function (path) {
     }
 }
 
-// serveFile(res, path, contentType)
-//
-// Serves a file to the response stream
-// res : the http.ServerResponse object
-// path : the path of the file to serve
+/** 
+ * Serves a file to the response stream
+ * @param {http.ServerResponse} res : the http.ServerResponse object
+ * @param {string} path : the path of the file to serve
+ */
 module.exports.serveFile = function (res, path) {
     if (res && path) {
         fs.readFile(path, function (err, data) {
@@ -70,13 +73,13 @@ module.exports.serveFile = function (res, path) {
     }
 }
 
-// serveJavascriptObject(res, obj, callback)
-//
-// Serves a javascript object as the response.  Can optionally use jsonp to return the object by supplying a callback
-// method name.
-// res : the http.ServerResponse object
-// obj : the javascript object to return in the response as a JSON string
-// callback : an optional string containing the name of a callback function to wrap around the JSON object string
+/** 
+ * Serves a javascript object as the response.  Can optionally use jsonp to return the object by supplying a callback
+ * method name.
+ * @param {http.ServerResponse} res : the http.ServerResponse object
+ * @param {object} obj : the javascript object to return in the response as a JSON string
+ * @param {string} callback : an optional string containing the name of a callback function to wrap around the JSON object string
+ */
 module.exports.serveJavascriptObject = function (res, obj, callback) {
     if (callback) {
         res.writeHead(200, { 'Content-type': 'application/javascript' });
@@ -88,9 +91,12 @@ module.exports.serveJavascriptObject = function (res, obj, callback) {
     }
 }
 
-// copyFile(srcFilePath, dstFilePath)
-//
-// Copy a file from the srcFilePath to dstFilePath asynchronously
+/** 
+ * Copy a file from the srcFilePath to dstFilePath asynchronously
+ * @param {string} srcFilePath : the source file path
+ * @param {string} dstFilePath : the destination file path
+ * @param {function} onComplete : a function to execute once the file copy has completed
+ */
 module.exports.copyFile = function (srcFilePath, dstFilePath, onComplete) {
     console.log('Copying ' + srcFilePath + ' to ' + dstFilePath);
 
