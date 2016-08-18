@@ -1,6 +1,8 @@
 var fs = require('fs');
 var pathModule = require('path');
 var mkdirpModule = require('mkdirp');
+var cv = require('opencv');
+var tmp = require('tmp');
 
 var contentTypes = {
     '.jpg': 'image/jpg',
@@ -40,6 +42,34 @@ module.exports.getContentType = function (path) {
     }
 }
 
+module.exports.detectFace = function(path, callback) {
+    cv.readImage(path, function(err, im) {
+        if (err) callback(false, path);
+
+        im.detectObject(cv.FACE_CASCADE, {}, function(err, faces) {
+            if (err || !faces || faces.length == 0) callback(false, path);
+
+            for (var i = 0; faces && i < faces.length; i++) {
+                var faceBounds = faces[i];
+                im.ellipse( faceBounds.x + faceBounds.width / 2,
+                            faceBounds.y + faceBounds.height / 2,
+                            faceBounds.width / 2,
+                            faceBounds.height / 2 );
+
+                tmp.tmpName(function _tempNameGenerated(err, tmpPathName) {
+                    if (err) throw err;
+                    var i = path.lastIndexOf('.');
+                    var ext = path.substr(i);
+                    var tempPath = tmpPathName + ext;
+                    console.log("Created temporary filename: ", tempPath)
+                    im.save(tempPath)
+                    callback(false, tempPath);
+                })
+            }
+        })
+    })
+}
+
 /** 
  * Serves a file to the response stream
  * @param {http.ServerResponse} res : the http.ServerResponse object
@@ -47,28 +77,30 @@ module.exports.getContentType = function (path) {
  */
 module.exports.serveFile = function (res, path) {
     if (res && path) {
-        fs.readFile(path, function (err, data) {
-            if (err) {
-                if (err.code === 'ENOENT') {
-                    console.log(path + ' not found returning 404 response');
-                    res.writeHead(404);
-                    res.end();
-                    return;
+        exports.detectFace(path, function _faceDetection(err, servepath){
+            fs.readFile(servepath, function (err, data) {
+                if (err) {
+                    if (err.code === 'ENOENT') {
+                        console.log(path + ' not found returning 404 response');
+                        res.writeHead(404);
+                        res.end();
+                        return;
+                    }
+                    else {
+                        throw err;
+                    }
                 }
                 else {
-                    throw err;
-                }
-            }
-            else {
-                console.log('Now serving ' + path);
-                var contentType = module.exports.getContentType(path);
-                if (contentType) {
-                    res.writeHead(200, { 'Content-Type': contentType });
-                }
+                    console.log('Now serving ' + path);
+                    var contentType = module.exports.getContentType(path);
+                    if (contentType) {
+                        res.writeHead(200, { 'Content-Type': contentType });
+                    }
 
-                res.end(data);
-                return;
-            }
+                    res.end(data);
+                    return;
+                }
+            });
         });
     }
 }

@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github/bonestormiii/Curator"
+    "url": "https://github.com/bonestormiii/Curator"
   },
   "keywords": [
     "image",
@@ -20,9 +20,10 @@
   "dependencies": {
     "express": "^4.13.4",
     "mkdirp": "0.5.1",
-	"opencv": "https://github.com/bonestormiii/node-opencv"
+    "opencv": "https://github.com/bonestormiii/node-opencv",
+    "tmp": "0.0.28"
   },
   "engines": {
     "node": ">=6.2.0"
-  } 
+  }
 }
