@@ -42,6 +42,16 @@ module.exports.getContentType = function (path) {
     }
 }
 
+var recognizer = null;
+var model = null;
+module.exports.getRecognizer = function() {
+    if (recognizer == null) {
+        recognizer = cv.FaceRecognizer
+        model = recognizer.createEigenFaceRecognizer();
+        model.loadSync('./resource/ethan.xml');
+    }
+    return model;
+}
 /**
  * Detects a face in the given file.
  * @param {string} path : The full path to an image file to detect faces in
@@ -61,6 +71,8 @@ module.exports.detectFace = function(path, callback) {
                             faceBounds.y + faceBounds.height / 2,
                             faceBounds.width / 2,
                             faceBounds.height / 2 );
+                
+                var model = exports.getRecognizer();
 
                 tmp.tmpName({ template: './tmp/tmp-XXXXXX' }, function _tempNameGenerated(err, tmpPathName) {
                     if (err) throw err;
@@ -82,6 +94,7 @@ module.exports.detectFace = function(path, callback) {
 module.exports.serveAndDetectFace = function (res, path) {
     exports.detectFace(path, function _faceDetectionComplete(err, servePath) {
         exports.serveFile(res, servePath, function _serveComplete() {
+            // discard the face detected file if it exists.
             if (~servePath.indexOf('tmp/tmp-'))
             {
                 exports.deleteFile(servePath);
