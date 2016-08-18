@@ -144,7 +144,10 @@ module.exports.deleteFile = function (deleteFilePath, onComplete) {
         else {
             console.log("Deleted " + deleteFilePath);
         }
-        onComplete(err);
+        
+        if (typeof onComplete === 'function') {
+            onComplete(err);
+        }
     });
 }
 
