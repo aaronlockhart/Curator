@@ -42,6 +42,12 @@ module.exports.getContentType = function (path) {
     }
 }
 
+/**
+ * Detects a face in the given file.
+ * @param {string} path : The full path to an image file to detect faces in
+ * @param {function} callback : A callback function executed when the facial recognition is complete.
+ * It returns 
+ */
 module.exports.detectFace = function(path, callback) {
     cv.readImage(path, function(err, im) {
         if (err) callback(false, path);
@@ -56,7 +62,7 @@ module.exports.detectFace = function(path, callback) {
                             faceBounds.width / 2,
                             faceBounds.height / 2 );
 
-                tmp.tmpName(function _tempNameGenerated(err, tmpPathName) {
+                tmp.tmpName({ template: './tmp/tmp-XXXXXX' }, function _tempNameGenerated(err, tmpPathName) {
                     if (err) throw err;
                     var i = path.lastIndexOf('.');
                     var ext = path.substr(i);
@@ -70,37 +76,49 @@ module.exports.detectFace = function(path, callback) {
     })
 }
 
+/**
+ * Does face detection and then serves the file
+ */
+module.exports.serveAndDetectFace = function (res, path) {
+    exports.detectFace(path, function _faceDetectionComplete(err, servePath) {
+        exports.serveFile(res, servePath, function _serveComplete() {
+            if (~servePath.indexOf('tmp/tmp-'))
+            {
+                exports.deleteFile(servePath);
+            }
+        });
+    });
+}
+
 /** 
  * Serves a file to the response stream
  * @param {http.ServerResponse} res : the http.ServerResponse object
  * @param {string} path : the path of the file to serve
  */
-module.exports.serveFile = function (res, path) {
+module.exports.serveFile = function (res, path, serveComplete) {
     if (res && path) {
-        exports.detectFace(path, function _faceDetection(err, servepath){
-            fs.readFile(servepath, function (err, data) {
-                if (err) {
-                    if (err.code === 'ENOENT') {
-                        console.log(path + ' not found returning 404 response');
-                        res.writeHead(404);
-                        res.end();
-                        return;
-                    }
-                    else {
-                        throw err;
-                    }
+        fs.readFile(path, function (err, data) {
+            if (err) {
+                if (err.code === 'ENOENT') {
+                    console.log(path + ' not found returning 404 response');
+                    res.writeHead(404);
+                    res.end();
                 }
                 else {
-                    console.log('Now serving ' + path);
-                    var contentType = module.exports.getContentType(path);
-                    if (contentType) {
-                        res.writeHead(200, { 'Content-Type': contentType });
-                    }
-
-                    res.end(data);
-                    return;
+                    throw err;
                 }
-            });
+            }
+            else {
+                console.log('Now serving ' + path);
+                var contentType = module.exports.getContentType(path);
+                if (contentType) {
+                    res.writeHead(200, { 'Content-Type': contentType });
+                }
+
+                res.end(data);
+            }
+
+            serveComplete();
         });
     }
 }

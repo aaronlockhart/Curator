@@ -37,7 +37,7 @@ appInstance.expressInstance.get('/file', function (req, res) {
         res.end();
     }
     else {
-        util.serveFile(res, appInstance.getFilePath(filename));
+        util.serveAndDetectFace(res, appInstance.getFilePath(filename));
     }
 });
 
