@@ -130,11 +130,30 @@ module.exports.copyFile = function (srcFilePath, dstFilePath, onComplete) {
     });
 }
 
+/**
+ * Deletes a file
+ * @param {string} deleteFilePath : The path to the file to be deleted.
+ * @param {function} onComplete : A callback function executed after the file has been deleted.
+ */
 module.exports.deleteFile = function (deleteFilePath, onComplete) {
     console.log("Attempting to delete file " + deleteFilePath);
-    fs.unlink(deleteFilePath, onComplete);
+    fs.unlink(deleteFilePath, function _fileDeleted(err) {
+        if (err) {
+            console.log("Error deleting the file " + deleteFilePath + ": " + err);
+        }
+        else {
+            console.log("Deleted " + deleteFilePath);
+        }
+        onComplete(err);
+    });
 }
 
+/**
+ * Get the directories in a given path
+ * @param {string} path : The path for which directories are to be listed.
+ * @param {bool} recurse : Flag indicating if the listing should recurse into subdirectories.
+ * @return {stiring []} An array of the directories
+ */
 module.exports.getDirsSync = function (path, recurse) {
     console.log("Getting dirs for " + path)
     var dirInfo = fs.readdirSync(path);
@@ -159,6 +178,11 @@ module.exports.getDirsSync = function (path, recurse) {
     return result;
 }
 
+/**
+ * Gets a listing of the files in the directory
+ * @param {string} path : The path of the directory for which files are listed.
+ * @return {string []} : An array containing the names of the files.
+ */
 module.exports.getFilesInDirSync = function (path) {
     var dirInfo = fs.readdirSync(path);
     var result = [];
