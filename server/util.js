@@ -60,8 +60,7 @@ var dumpFace = function(image, face, i) {
     crop.save('./tmp/face' + i + '.png');
 }
 
-module.exports.detectEthan = function(image, face) {
-    dumpFace(image, face, 'rec');
+module.exports.detectEthan = function(image, face, i) {
     var crop = image.crop(face.x, face.y, face.width, face.height);
     crop.resize(FACE_WIDTH, FACE_HEIGHT);
     
@@ -69,6 +68,7 @@ module.exports.detectEthan = function(image, face) {
     var res = model.predictSync(crop);
     // positive
     if (res.id === 1) {
+        dumpFace(image, face, 'rec' + i);
         return true;
     }
 
@@ -80,12 +80,12 @@ var deleteTempFaceFiles = function(deleteDone) {
         if (error) throw error;
 
         files.filter(function (fileName) {
-            return /face\d+\.png/.test(fileName);
+            return /face.*\.png/.test(fileName);
         })
         .forEach(function (file) {
             fs.unlink('./tmp/' + file);
         });
-        
+
         deleteDone();
     });
 }
@@ -113,7 +113,7 @@ module.exports.detectFace = function(path, callback) {
                 dumpFace(im, face, i);
 
                 // Check if it's Ethan!
-                if (exports.detectEthan(im, face)) {
+                if (exports.detectEthan(im, face, i)) {
                     console.log("Face " + i + " is Ethan!");
                 }
 
