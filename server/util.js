@@ -67,7 +67,7 @@ module.exports.detectEthan = function(image, face, i) {
     var model = getRecognizer();
     var res = model.predictSync(crop);
     // positive
-    if (res.id === 1) {
+    if (res.id === 1 && res.confidence < 4000) {
         dumpFace(image, face, 'rec' + i);
         return true;
     }
