@@ -42,16 +42,54 @@ module.exports.getContentType = function (path) {
     }
 }
 
-var recognizer = null;
 var model = null;
-module.exports.getRecognizer = function() {
-    if (recognizer == null) {
-        recognizer = cv.FaceRecognizer
-        model = recognizer.createEigenFaceRecognizer();
+var getRecognizer = function() {
+    if (model === null) {
+        model = cv.FaceRecognizer.createEigenFaceRecognizer();
         model.loadSync('./resource/ethan.xml');
     }
     return model;
 }
+
+var FACE_WIDTH = 92;
+var FACE_HEIGHT = 112;
+
+var dumpFace = function(image, face, i) {
+    var crop = image.crop(face.x, face.y, face.width, face.height);
+    crop.resize(FACE_WIDTH, FACE_HEIGHT);
+    crop.save('./tmp/face' + i + '.png');
+}
+
+module.exports.detectEthan = function(image, face) {
+    dumpFace(image, face, 'rec');
+    var crop = image.crop(face.x, face.y, face.width, face.height);
+    crop.resize(FACE_WIDTH, FACE_HEIGHT);
+    
+    var model = getRecognizer();
+    var res = model.predictSync(crop);
+    // positive
+    if (res.id === 1) {
+        return true;
+    }
+
+    return false;
+}
+
+var deleteTempFaceFiles = function(deleteDone) {
+    fs.readdir('./tmp', function (error, files) {
+        if (error) throw error;
+
+        files.filter(function (fileName) {
+            return /face\d+\.png/.test(fileName);
+        })
+        .forEach(function (file) {
+            fs.unlink('./tmp/' + file);
+        });
+        
+        deleteDone();
+    });
+}
+
 /**
  * Detects a face in the given file.
  * @param {string} path : The full path to an image file to detect faces in
@@ -63,42 +101,56 @@ module.exports.detectFace = function(path, callback) {
         if (err) callback(false, path);
 
         im.detectObject(cv.FACE_CASCADE, {}, function(err, faces) {
-            if (err || !faces || faces.length == 0) callback(false, path);
-
-            for (var i = 0; faces && i < faces.length; i++) {
-                var faceBounds = faces[i];
-                im.ellipse( faceBounds.x + faceBounds.width / 2,
-                            faceBounds.y + faceBounds.height / 2,
-                            faceBounds.width / 2,
-                            faceBounds.height / 2 );
-                
-                var model = exports.getRecognizer();
-
-                tmp.tmpName({ template: './tmp/tmp-XXXXXX' }, function _tempNameGenerated(err, tmpPathName) {
-                    if (err) throw err;
-                    var i = path.lastIndexOf('.');
-                    var ext = path.substr(i);
-                    var tempPath = tmpPathName + ext;
-                    console.log("Created temporary filename: ", tempPath)
-                    im.save(tempPath)
-                    callback(false, tempPath);
-                })
+            if (err || !faces || faces.length == 0) {
+                console.log('No faces detected returning ' + path);
+                callback(false, path);
+                return;
             }
-        })
-    })
+
+            console.log('Face(s) detected');
+            for (var i = 0; faces && i < faces.length; i++) {
+                var face = faces[i];
+                dumpFace(im, face, i);
+
+                // Check if it's Ethan!
+                if (exports.detectEthan(im, face)) {
+                    console.log("Face " + i + " is Ethan!");
+                }
+
+                // Draw a red ellipse
+                im.ellipse( face.x + face.width / 2,
+                            face.y + face.height / 2,
+                            face.width / 2,
+                            face.height / 2 );   
+            }
+            
+            tmp.tmpName({ template: './tmp/tmp-XXXXXX' }, function _tempNameGenerated(err, tmpPathName) {
+                if (err) throw err;
+                var i = path.lastIndexOf('.');
+                var ext = path.substr(i);
+                var tempPath = tmpPathName + ext;
+                console.log("Created temporary filename: ", tempPath)
+                im.save(tempPath)
+                
+                callback(false, tempPath);
+            });
+        });
+    });
 }
 
 /**
  * Does face detection and then serves the file
  */
 module.exports.serveAndDetectFace = function (res, path) {
-    exports.detectFace(path, function _faceDetectionComplete(err, servePath) {
-        exports.serveFile(res, servePath, function _serveComplete() {
-            // discard the face detected file if it exists.
-            if (~servePath.indexOf('tmp/tmp-'))
-            {
-                exports.deleteFile(servePath);
-            }
+    deleteTempFaceFiles(function () {
+        exports.detectFace(path, function _faceDetectionComplete(err, servePath) {
+            exports.serveFile(res, servePath, function _serveComplete() {
+                // discard the face detected file if it exists.
+                if (~servePath.indexOf('tmp/tmp-'))
+                {
+                    exports.deleteFile(servePath);
+                }
+            });
         });
     });
 }
