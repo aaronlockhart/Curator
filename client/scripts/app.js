@@ -36,7 +36,9 @@ var app = (function () {
 
     var clearingTags = false;
     
-    // Setup image tagging
+    /**
+     *  Setup image tagging
+     */ 
     var taggle = new Taggle('tags', {
         onTagAdd: function (event, tag) {
             $.getJSON('/action?button=tag&filename=' + currentFileInfo.filename + '&ajax=true&tag=' + tag, function (data) {
@@ -54,6 +56,9 @@ var app = (function () {
 
     var currentFileInfo = fileMetadata();
 
+    /**
+     * Retrieves the current file information from the server
+     */
     function getCurrentFileInfo(currentInfoCallback) {
         $.getJSON('/currentFileInfo', function (data) {
             console.log(data);
@@ -61,6 +66,9 @@ var app = (function () {
         });
     }
 
+    /**
+     * Updates the current image with the info from the server
+     */
     function setCurrentFileInfo(currentInfo, fetch) {
         fetch = fetch || true;
         currentFileInfo = currentInfo;
@@ -75,11 +83,15 @@ var app = (function () {
         for (i = 0; i < currentFileInfo.tags.length; i++) {
             taggle.add(currentFileInfo.tags[i]);
         }
+
         if (fetch) {
             $("#image").attr("src", "/file?filename=" + currentFileInfo.filename);
         }
     }
 
+    /**
+     * Handler for a left swipe
+     */ 
     function mySwipeLeftHandler(event) {
         clearTags();
         console.log(event);
@@ -89,6 +101,9 @@ var app = (function () {
         });
     }
 
+    /**
+     * Handler for a right swipe
+     */
     function mySwipeRightHandler(event) {
         clearTags();
         console.log(event);
@@ -98,6 +113,9 @@ var app = (function () {
         });
     }
 
+    /**
+     * Handler for an up swipe
+     */ 
     function mySwipeUpHandler(event) {
         clearTags();
         console.log(event);
@@ -109,6 +127,9 @@ var app = (function () {
         }
     }
 
+    /**
+     * Handler for a down swipe
+     */
     function mySwipeDownHandler(event) {
         clearTags();
         if (currentFileInfo.filename) {
@@ -119,7 +140,9 @@ var app = (function () {
         }
     }
 
-    // Clears the tags with a flag set to true so we don't send a message to the server to remove the tags from metadata
+    /**
+     * Clears the tags with a flag set to true so we don't send a message to the server to remove the tags from metadata
+     */ 
     function clearTags() {
         clearingTags = true;
         taggle.removeAll();
