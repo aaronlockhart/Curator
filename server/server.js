@@ -6,7 +6,7 @@ var app = require('./app');
 var util = require('./util');
 
 // app configuration data
-var rootPath = '../client';
+var rootPath = '../curator-client/dist';
 var validFileTypes = /\.gif|\.jpg|\.jpeg/i;
 var serverPort = 8080;
 
@@ -25,13 +25,13 @@ var appInstance = app({
 appInstance.expressInstance.use('/', express.static(rootPath));
 
 // Handle client requests for a given file
-appInstance.expressInstance.get('/file', function (req, res) {
+appInstance.expressInstance.get('/api/file', function (req, res) {
     var reqURL = url.parse(req.url, true);
     console.log("Received query: " + req.url + '\n');
     console.log(util.getQueryValueString(reqURL.query));
 
     var filename = reqURL.query.filename;
-            
+
     // Serve the current image
     if (!appInstance.isValidFile(filename)) {
         res.end();
@@ -42,11 +42,11 @@ appInstance.expressInstance.get('/file', function (req, res) {
 });
 
 // Handle client requests to get file information for the current file
-appInstance.expressInstance.get('/currentFileInfo', function (req, res) {
+appInstance.expressInstance.get('/api/currentFileInfo', function (req, res) {
     var reqURL = url.parse(req.url, true);
     console.log("Received query: " + req.url + '\n');
     console.log(util.getQueryValueString(reqURL.query));
-    
+
     // get the meta of the current file
     var meta = appInstance.getFileMetadata();
     console.log("Returning metadata " + JSON.stringify(meta));
@@ -54,7 +54,7 @@ appInstance.expressInstance.get('/currentFileInfo', function (req, res) {
 });
 
 // Actions (client requests to do something..)
-appInstance.expressInstance.get('/action', function (req, res, next) {
+appInstance.expressInstance.get('/api/action', function (req, res, next) {
     var reqURL = url.parse(req.url, true);
     console.log("Received query: " + req.url + '\n');
     console.log(util.getQueryValueString(reqURL.query));
