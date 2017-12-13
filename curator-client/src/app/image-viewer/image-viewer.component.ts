@@ -22,6 +22,8 @@ export class FileMetadata {
   styleUrls: ['./image-viewer.component.css']
 })
 export class ImageViewerComponent implements OnInit {
+  SWIPE_ACTION = { LEFT: 'swipeleft', RIGHT: 'swiperight', UP: 'swipeup', DOWN: 'swipedown' };
+
   private clearingTags = false;
   private currentFileInfo = new FileMetadata();
 
@@ -84,7 +86,7 @@ export class ImageViewerComponent implements OnInit {
   /**
    * Handler for a left swipe
    */
-  public mySwipeLeftHandler(event): void {
+  public swipeLeft(event): void {
     this.clearTags();
     console.log(event);
     this.http.get('/api/action?button=next&ajax=true').subscribe(data => {
@@ -96,7 +98,7 @@ export class ImageViewerComponent implements OnInit {
   /**
    * Handler for a right swipe
    */
-  public mySwipeRightHandler(event): void {
+  public swipeRight(event): void {
     this.clearTags();
     console.log(event);
     this.http.get('/api/action?button=prev&ajax=true').subscribe(data => {
@@ -108,7 +110,7 @@ export class ImageViewerComponent implements OnInit {
   /**
    * Handler for an up swipe
    */
-  public mySwipeUpHandler(event): void {
+  public swipeUp(event): void {
     this.clearTags();
     console.log(event);
     if (this.currentFileInfo.filename) {
@@ -122,7 +124,7 @@ export class ImageViewerComponent implements OnInit {
   /**
    * Handler for a down swipe
    */
-  public mySwipeDownHandler(event): void {
+  public swipeDown(event): void {
     this.clearTags();
     if (this.currentFileInfo.filename) {
       this.http.get('/api/action?button=unkeep&ajax=true&filename=' + this.currentFileInfo.filename).subscribe(data => {
