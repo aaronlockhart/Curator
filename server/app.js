@@ -6,36 +6,36 @@ var util = require('./util');
 
 var createCuratorApp = function (init) {
     init = init || {};
-    
+
     // Private data ////
-    
+
     /**
      * The directory to store the fileInfo files in
      */
     var fileInfosDir = "";
-    
+
     /**
      * fileInfos is an array of all the file info objects (one for every folder)
-     */ 
+     */
     var fileInfos = [];
-    
+
     /**
      * Configuration settings for the application
-     */ 
+     */
     var configData = {};
-    
+
     /**
      * The paths to where images can be located
      */
     var imageSrcDirs = [];
-    
+
     /**
      *  The backup folder path
      */
     var backupDir = ""
 
     var currInfoIndex = 0;
-    
+
     // Private methods ////
     var setInitConfigOnFileInfo = function (info) {
         // copy in app initialization information
@@ -63,7 +63,7 @@ var createCuratorApp = function (init) {
 
             fileInfos.push(fileInfo(fileInfoDataObject));
         });
-        
+
         // Bootstrap any source dirs that don't exist
         imageSrcDirs.forEach(function (srcDir) {
             var match = false;
@@ -78,12 +78,12 @@ var createCuratorApp = function (init) {
 
             if (!match) {
                 console.log("Bootstrapping " + srcDir);
-                
+
                 // push the source dir
                 fileInfos.push(fileInfo(setInitConfigOnFileInfo({
                     dir: srcDir,
                 })));
-                
+
                 // push any sub dirs
                 var dirs = util.getDirsSync(srcDir, true);
                 console.log("Got dirs " + dirs);
@@ -96,7 +96,7 @@ var createCuratorApp = function (init) {
         })
 
     }
-    
+
     // Initializes all the file info objects
     var initializeFileInfos = function () {
         loadFileInfosSync();
@@ -115,11 +115,11 @@ var createCuratorApp = function (init) {
             fileInfos[i].saveFileInfo(true);
         }
     }
-    
+
     // Initialize the application instance
     var initialize = function (instance) {
         // load in config settings
-        var configString = fs.readFileSync("./resource/config.txt");
+        var configString = fs.readFileSync("./resource/config.json");
         configData = JSON.parse(configString);
 
         fileInfosDir = configData["fileInfosDir"] || './data';
@@ -131,9 +131,9 @@ var createCuratorApp = function (init) {
         initializeFileInfos();
         saveAllFileInfosSync();
     }
-    
+
     // Create an app instance ////
-    
+
     var instance = {
         // An instance of express used for routing server requests.
         expressInstance: express(),
@@ -166,7 +166,7 @@ var createCuratorApp = function (init) {
         moveToBackupFolder: function (fileId) {
             this.moveFilesToBackupFolder([fileId]);
         },
-        
+
         // Saves all the file infos synchronously
         saveAllFileInfosSync: function () {
             saveAllFileInfosSync();
@@ -232,7 +232,7 @@ var createCuratorApp = function (init) {
             while (!hasNextValidFile && currInfoIndex + 1 < fileInfos.length) {
                 console.log("Moving to next file info");
                 currInfoIndex = currInfoIndex + 1;
-                
+
                 if (!fileInfos[currInfoIndex].isValidFile()) {
                     hasNextValidFile = fileInfos[currInfoIndex].getNextValidFile();
                 }
@@ -257,7 +257,7 @@ var createCuratorApp = function (init) {
             while (!hasPrevValidFile && currInfoIndex - 1 > -1) {
                 console.log("Moving to previous file info");
                 currInfoIndex = currInfoIndex - 1;
-                
+
                 if (!fileInfos[currInfoIndex].isValidFile()) {
                     hasPrevValidFile = fileInfos[currInfoIndex].getPrevValidFile();
                 }
