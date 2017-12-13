@@ -28,6 +28,7 @@ export class ImageViewerComponent implements OnInit {
   private currentFileInfo = new FileMetadata();
 
   public imageUrl: string;
+  public class: string;
 
   // private taggle = new Taggle('tags', {
   //   onTagAdd: function (event, tag) {
@@ -69,9 +70,9 @@ export class ImageViewerComponent implements OnInit {
     this.currentFileInfo = currentInfo;
 
     if (this.currentFileInfo.keep) {
-      // $("#image").attr("class", "highlighted");
+      this.class = 'highlighted';
     } else {
-      // $("#image").attr("class", "");
+      this.class = '';
     }
 
     for (let i = 0; i < this.currentFileInfo.tags.length; i++) {
