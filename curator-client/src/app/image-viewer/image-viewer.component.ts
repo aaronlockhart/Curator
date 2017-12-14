@@ -1,20 +1,9 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 
-export class FileMetadata {
-  public filename: string;
-  public path: string;
-  public keep: boolean;
-  public tags: string[];
+import { FileMetadata, isFileMetadata } from '../classes/file-metadata';
+import { FileInfoService } from '../file-info/file-info.service';
 
-  public constructor(init?) {
-    init = init || {};
-    this.filename = init.filename || '';
-    this.path = init.path || '';
-    this.keep = init.keep == undefined ? false : init.keep;
-    this.tags = init.tags || [];
-  }
-}
 
 @Component({
   selector: 'app-image-viewer',
@@ -25,7 +14,6 @@ export class ImageViewerComponent implements OnInit {
   SWIPE_ACTION = { LEFT: 'swipeleft', RIGHT: 'swiperight', UP: 'swipeup', DOWN: 'swipedown' };
 
   private clearingTags = false;
-  private currentFileInfo = new FileMetadata();
 
   public imageUrl: string;
   public class: string;
@@ -46,41 +34,29 @@ export class ImageViewerComponent implements OnInit {
   // });
 
 
-  constructor(private http: HttpClient) { }
-
-  public ngOnInit() {
-    this.getCurrentFileInfo();
+  constructor(private http: HttpClient, private fileInfo: FileInfoService) {
   }
 
-  /**
-   * Retrieves the current file information from the server
-   */
-  public getCurrentFileInfo(): void {
-    this.http.get('/api/currentFileInfo').subscribe(response => {
-      console.log(response);
-      this.setCurrentFileInfo(new FileMetadata(response));
-    }, error => console.log(error));
+  public ngOnInit(): void {
+    this.fileInfo.observableCurrentFileMetadata.subscribe(next => this.setCurrentFileInfo(next));
   }
 
   /**
    * Updates the current image with the info from the server
    */
-  public setCurrentFileInfo(currentInfo: FileMetadata, fetch?: boolean): void {
-    fetch = fetch == undefined ? true : fetch;
-    this.currentFileInfo = currentInfo;
+  public setCurrentFileInfo(currentInfo: FileMetadata): void {
+    if (currentInfo) {
+      if (currentInfo.keep) {
+        this.class = 'highlighted';
+      } else {
+        this.class = '';
+      }
 
-    if (this.currentFileInfo.keep) {
-      this.class = 'highlighted';
-    } else {
-      this.class = '';
-    }
+      for (let i = 0; i < currentInfo.tags.length; i++) {
+        // taggle.add(currentFileInfo.tags[i]);
+      }
 
-    for (let i = 0; i < this.currentFileInfo.tags.length; i++) {
-      // taggle.add(currentFileInfo.tags[i]);
-    }
-
-    if (fetch) {
-      this.imageUrl = '/api/file?filename=' + this.currentFileInfo.filename;
+      this.imageUrl = '/api/file?filename=' + currentInfo.filename;
     }
   }
 
@@ -92,7 +68,9 @@ export class ImageViewerComponent implements OnInit {
     console.log(event);
     this.http.get('/api/action?button=next&ajax=true').subscribe(data => {
       console.log(data);
-      this.setCurrentFileInfo(new FileMetadata(data));
+      if (isFileMetadata(data)) {
+        this.fileInfo.setCurrentFileInfo(data);
+      }
     });
   }
 
@@ -104,7 +82,9 @@ export class ImageViewerComponent implements OnInit {
     console.log(event);
     this.http.get('/api/action?button=prev&ajax=true').subscribe(data => {
       console.log(data);
-      this.setCurrentFileInfo(new FileMetadata(data));
+      if (isFileMetadata(data)) {
+        this.fileInfo.setCurrentFileInfo(data);
+      }
     });
   }
 
@@ -114,10 +94,12 @@ export class ImageViewerComponent implements OnInit {
   public swipeUp(event): void {
     this.clearTags();
     console.log(event);
-    if (this.currentFileInfo.filename) {
-      this.http.get('/api/action?button=keep&ajax=true&filename=' + this.currentFileInfo.filename).subscribe(data => {
+    if (this.fileInfo.currentFileMetadata && this.fileInfo.currentFileMetadata.filename) {
+      this.http.get('/api/action?button=keep&ajax=true&filename=' + this.fileInfo.currentFileMetadata.filename).subscribe(data => {
         console.log(data);
-        this.setCurrentFileInfo(new FileMetadata(data), false);
+        if (isFileMetadata(data)) {
+          this.fileInfo.setCurrentFileInfo(data);
+        }
       });
     }
   }
@@ -127,10 +109,12 @@ export class ImageViewerComponent implements OnInit {
    */
   public swipeDown(event): void {
     this.clearTags();
-    if (this.currentFileInfo.filename) {
-      this.http.get('/api/action?button=unkeep&ajax=true&filename=' + this.currentFileInfo.filename).subscribe(data => {
+    if (this.fileInfo.currentFileMetadata && this.fileInfo.currentFileMetadata.filename) {
+      this.http.get('/api/action?button=unkeep&ajax=true&filename=' + this.fileInfo.currentFileMetadata.filename).subscribe(data => {
         console.log(data);
-        this.setCurrentFileInfo(new FileMetadata(data), false);
+        if (isFileMetadata(data)) {
+          this.fileInfo.setCurrentFileInfo(data);
+        }
       });
     }
   }

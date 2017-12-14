@@ -5,6 +5,7 @@ import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
 import { AppHammerConfig } from './config/app-hammer-config';
+import { FileInfoService } from './file-info/file-info.service';
 import { ImageViewerComponent } from './image-viewer/image-viewer.component';
 
 
@@ -18,6 +19,7 @@ import { ImageViewerComponent } from './image-viewer/image-viewer.component';
     HttpClientModule
   ],
   providers: [
+    FileInfoService,
     { provide: HAMMER_GESTURE_CONFIG, useClass: AppHammerConfig }
   ],
   bootstrap: [AppComponent]
