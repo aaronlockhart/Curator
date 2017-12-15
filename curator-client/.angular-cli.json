@@ -19,10 +19,16 @@
       "testTsconfig": "tsconfig.spec.json",
       "prefix": "app",
       "styles": [
-        "styles.css"
+        "styles.css",
+        "../node_modules/taggle/example/css/taggle.css",
+        "../node_modules/taggle/example/css/projects.min.css",
+        "../node_modules/taggle/example/css/twilight.css"
       ],
       "scripts": [
-        "../node_modules/hammerjs/hammer.min.js"
+        "../node_modules/hammerjs/hammer.min.js",
+        "../node_modules/taggle/src/taggle-ie8.js",
+        "../node_modules/taggle/src/taggle-ie9.js",
+        "../node_modules/taggle/src/taggle.js"
       ],
       "environmentSource": "environments/environment.ts",
       "environments": {

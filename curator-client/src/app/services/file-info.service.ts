@@ -9,29 +9,31 @@ import { FileMetadata, isFileMetadata } from '../classes/file-metadata';
 export class FileInfoService {
   private currentFileMetadataSubject: BehaviorSubject<FileMetadata>;
 
-  public get observableCurrentFileMetadata(): Observable<FileMetadata> {
-    return this.currentFileMetadataSubject;
-  }
-
   public get currentFileMetadata(): FileMetadata {
     return this.currentFileMetadataSubject.getValue();
   }
 
   constructor(private http: HttpClient) {
     this.currentFileMetadataSubject = new BehaviorSubject<FileMetadata>(undefined);
-    this.getCurrentFileInfo();
   }
 
   /**
    * Retrieves the current file information from the server
    */
-  public getCurrentFileInfo(): void {
-    this.http.get('/api/currentFileInfo').subscribe(response => {
-      console.log(response);
-      if (isFileMetadata(response)) {
-        this.currentFileMetadataSubject.next(response);
-      }
-    }, error => console.log(error));
+  public getCurrentFileInfo(): Observable<FileMetadata> {
+    if (this.currentFileMetadataSubject.getValue() == undefined) {
+
+      this.http.get('/api/currentFileInfo').subscribe(response => {
+        if (isFileMetadata(response)) {
+          this.currentFileMetadataSubject.next(response);
+        } else {
+          throw new Error('Unrecognized response' + JSON.stringify(response));
+        }
+      }, error => console.log(error));
+
+    }
+
+    return this.currentFileMetadataSubject.asObservable();
   }
 
   /**

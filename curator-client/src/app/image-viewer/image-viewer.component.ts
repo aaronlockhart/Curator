@@ -1,8 +1,9 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subject } from 'rxjs/Subject';
 
 import { FileMetadata, isFileMetadata } from '../classes/file-metadata';
-import { FileInfoService } from '../file-info/file-info.service';
+import { FileInfoService } from '../services/file-info.service';
 
 
 @Component({
@@ -10,10 +11,11 @@ import { FileInfoService } from '../file-info/file-info.service';
   templateUrl: './image-viewer.component.html',
   styleUrls: ['./image-viewer.component.css']
 })
-export class ImageViewerComponent implements OnInit {
+export class ImageViewerComponent implements OnInit, OnDestroy {
   SWIPE_ACTION = { LEFT: 'swipeleft', RIGHT: 'swiperight', UP: 'swipeup', DOWN: 'swipedown' };
 
   private clearingTags = false;
+  private unsubscribe = new Subject<boolean>();
 
   public imageUrl: string;
   public class: string;
@@ -38,13 +40,17 @@ export class ImageViewerComponent implements OnInit {
   }
 
   public ngOnInit(): void {
-    this.fileInfo.observableCurrentFileMetadata.subscribe(next => this.setCurrentFileInfo(next));
+    this.fileInfo.getCurrentFileInfo().takeUntil(this.unsubscribe).subscribe(next => this.onUpdateCurrentFileInfo(next));
+  }
+
+  public ngOnDestroy(): void {
+    this.unsubscribe.next(true);
   }
 
   /**
    * Updates the current image with the info from the server
    */
-  public setCurrentFileInfo(currentInfo: FileMetadata): void {
+  public onUpdateCurrentFileInfo(currentInfo: FileMetadata): void {
     if (currentInfo) {
       if (currentInfo.keep) {
         this.class = 'highlighted';
