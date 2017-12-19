@@ -1,5 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import * as taggle from 'taggle';
+import { HttpClient } from '@angular/common/http';
+import * as Taggle from 'taggle';
+
+import { FileInfoService } from '../services/file-info.service';
 
 @Component({
   selector: 'app-image-tagger',
@@ -7,26 +10,45 @@ import * as taggle from 'taggle';
   styleUrls: ['./image-tagger.component.css']
 })
 export class ImageTaggerComponent implements OnInit {
-  private taggleInstance: taggle.Taggle;
+  private taggleInstance: Taggle;
 
-  constructor() {
-    this.taggleInstance = new taggle.Taggle('tags', {
-      onTagAdd: (event, tag) => {
-        // $.getJSON('/action?button=tag&filename=' + currentFileInfo.filename + '&ajax=true&tag=' + tag, function (data) {
-        //     console.log(data);
-        // });
-      },
-      onTagRemove: (event, tag) => {
-        // if (!clearingTags) {
-        //     $.getJSON('/action?button=untag&filename=' + currentFileInfo.filename + 'ajax=true&tag=' + tag, function (data) {
-        //         console.log(data);
-        //     });
-        // }
-      }
-    });
+  constructor(private http: HttpClient, private fileInfo: FileInfoService) {
   }
 
   ngOnInit() {
-  }
+    this.taggleInstance = new Taggle('tags', {
+      onTagAdd: (event, tag) => {
+        this.fileInfo.getCurrentFileInfo()
+          .filter(value => value == undefined)
+          .take(1)
+          .subscribe(currentFileMetadata => {
 
+            this.http.get(
+              '/api/action?button=tag&filename=' +
+              currentFileMetadata.filename +
+              '&ajax=true&tag=' +
+              tag
+            ).subscribe(data => {
+              console.log(data);
+            });
+          });
+      },
+      onTagRemove: (event, tag) => {
+        this.fileInfo.getCurrentFileInfo()
+          .filter(value => value == undefined)
+          .take(1)
+          .subscribe(currentFileMetadata => {
+
+            this.http.get(
+              '/api/action?button=untag&filename=' +
+              this.fileInfo.currentFileMetadata.filename +
+              'ajax=true&tag=' +
+              tag
+            ).subscribe(data => {
+              console.log(data);
+            });
+          });
+      }
+    });
+  }
 }

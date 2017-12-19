@@ -25,10 +25,7 @@
         "../node_modules/taggle/example/css/twilight.css"
       ],
       "scripts": [
-        "../node_modules/hammerjs/hammer.min.js",
-        "../node_modules/taggle/src/taggle-ie8.js",
-        "../node_modules/taggle/src/taggle-ie9.js",
-        "../node_modules/taggle/src/taggle.js"
+        "../node_modules/hammerjs/hammer.min.js"
       ],
       "environmentSource": "environments/environment.ts",
       "environments": {
