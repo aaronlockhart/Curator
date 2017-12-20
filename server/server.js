@@ -107,12 +107,18 @@ appInstance.expressInstance.get('/api/action', function (req, res, next) {
         var filename = reqURL.query.filename;
         var tag = reqURL.query.tag;
         appInstance.addTag(filename, tag);
+        if (reqURL.query.ajax === 'true') {
+            return;
+        }
     }
     // untag a picture
     else if (reqURL.query.button === 'untag') {
         var filename = reqURL.query.filename;
         var tag = reqURL.query.tag;
         appInstance.removeTag(filename, tag);
+        if (reqURL.query.ajax === 'true') {
+            return;
+        }
     }
 
     // This will redirect back to the root path so that the form buttons will work
