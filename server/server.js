@@ -108,6 +108,7 @@ appInstance.expressInstance.get('/api/action', function (req, res, next) {
         var tag = reqURL.query.tag;
         appInstance.addTag(filename, tag);
         if (reqURL.query.ajax === 'true') {
+            util.serveJavascriptObject(res, appInstance.getFileMetadata(filename));
             return;
         }
     }
@@ -117,6 +118,7 @@ appInstance.expressInstance.get('/api/action', function (req, res, next) {
         var tag = reqURL.query.tag;
         appInstance.removeTag(filename, tag);
         if (reqURL.query.ajax === 'true') {
+            util.serveJavascriptObject(res, appInstance.getFileMetadata(filename));
             return;
         }
     }

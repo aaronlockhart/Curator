@@ -53,7 +53,7 @@ export class ImageTaggerComponent implements OnInit, OnDestroy {
               this.http.get(
                 '/api/action?button=untag&filename=' +
                 this.fileInfo.currentFileMetadata.filename +
-                'ajax=true&tag=' +
+                '&ajax=true&tag=' +
                 tag
               ).subscribe(data => {
                 console.log(data);
