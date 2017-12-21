@@ -4,7 +4,7 @@ var express = require('express');
 var fs = require('fs');
 var util = require('./util');
 
-var createCuratorApp = function (init) {
+var CuratorApp = function (init) {
     init = init || {};
 
     // Private data ////
@@ -37,6 +37,11 @@ var createCuratorApp = function (init) {
     var currInfoIndex = 0;
 
     // Private methods ////
+    /**
+     * Sets options from the initializing object fileInfo property
+     * to the passed in file info object.
+     * @param {FileInfo} info 
+     */
     var setInitConfigOnFileInfo = function (info) {
         // copy in app initialization information
         if (init.fileInfo) {
@@ -50,6 +55,9 @@ var createCuratorApp = function (init) {
         return info;
     }
 
+    /**
+     * 
+     */
     var loadFileInfosSync = function () {
         var fileInfoFiles = util.getFilesInDirSync(fileInfosDir);
 
@@ -308,4 +316,4 @@ var createCuratorApp = function (init) {
     return instance;
 }
 
-module.exports = createCuratorApp;
+module.exports = CuratorApp;
