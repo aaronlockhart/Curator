@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Subject } from 'rxjs/Subject';
 import * as Taggle from 'taggle';
 
+import { isFileMetadata } from '../classes/file-metadata';
 import { FileInfoService } from '../services/file-info.service';
 
 @Component({
@@ -39,6 +40,9 @@ export class ImageTaggerComponent implements OnInit, OnDestroy {
                 tag
               ).subscribe(data => {
                 console.log(data);
+                if (isFileMetadata(data)) {
+                  this.fileInfo.setCurrentFileInfo(data);
+                }
               }, error => console.log(error));
             });
         }
@@ -57,6 +61,9 @@ export class ImageTaggerComponent implements OnInit, OnDestroy {
                 tag
               ).subscribe(data => {
                 console.log(data);
+                if (isFileMetadata(data)) {
+                  this.fileInfo.setCurrentFileInfo(data);
+                }
               }, error => console.log(error));
             });
         }

@@ -138,6 +138,11 @@ process.on('SIGINT', function () {
     process.exit();
 });
 
+process.on('SIGTERM', function () {
+    console.log('Caught SIGTERM');
+    process.exit();
+})
+
 process.on('exit', function () {
     console.log("Exiting..");
     appInstance.saveAllFileInfosSync();
